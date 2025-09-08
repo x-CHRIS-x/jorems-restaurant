@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Cart</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f8f8; text-align: center; margin: 0; padding: 20px; }
+        h1 { margin-bottom: 20px; }
+        table { margin: 0 auto 20px auto; border-collapse: collapse; width: 60%; background: #fff; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        th { background: #82e0aa; }
+        button { padding: 10px 20px; margin: 10px; background: #82e0aa; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #229954; color: white; }
+        a { text-decoration: none; color: #229954; font-weight: bold; }
+        a:hover { color: #145a32; }
+    </style>
+</head>
+<body>
+    <h1>Your Cart</h1>
+    {% if cart and cart|length > 0 %}
+    <table>
+        <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Subtotal</th>
+        </tr>
+        {% set ns = namespace(total=0) %}
+        {% for item in cart %}
+        <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.qty }}</td>
+            <td>PHP {{ item.subtotal }}</td>
+        </tr>
+        {% set ns.total = ns.total + item.subtotal %}
+        {% endfor %}
+    </table>
+    <h3>Total: PHP {{ ns.total }}</h3>
+    <form action="/clear_cart" method="post" style="display:inline;">
+        <button type="submit">Clear Cart</button>
+    </form>
+    <button disabled>Checkout (Coming Soon)</button>
+    {% else %}
+    <p>Your cart is empty.</p>
+    {% endif %}
+    <br>
+    <a href="/">Back to Menu</a>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Budget Exceeded</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f8f8; text-align: center; margin: 0; padding: 20px; }
+        h1 { margin-bottom: 20px; color: #e74c3c; }
+        p { color: #c0392b; }
+        form { display: inline-block; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; background: #e74c3c; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
+        button:hover { background: #922b21; }
+        a { text-decoration: none; color: #e74c3c; font-weight: bold; }
+        a:hover { color: #922b21; }
+    </style>
+</head>
+<body>
+    <h1>Budget Exceeded</h1>
+    <p>Your total is PHP {{ total }}, but your budget is PHP {{ budget }}.</p>
+    <form action="/budget_order" method="post" style="display:inline;">
+        <input type="hidden" name="budget_value" value="{{ budget }}">
+        {% for item in order %}
+            <input type="hidden" name="quantity_{{ item.id }}" value="{{ item.qty }}">
+        {% endfor %}
+        <input type="hidden" name="total" value="{{ total }}">
+        <button type="submit">Yes, continue anyway</button>
+    </form>
+    <a href="/">No, go back</a>
+</body>
+</html>
