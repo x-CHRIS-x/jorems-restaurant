@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jorem’s Restaurant Menu</title>
+</head>
+<body>
+    <h1>Jorem’s Restaurant Menu</h1>
+    <ul>
+        {% for item in menu %}
+        {% if item.available and item.ordered_today < item.daily_limit %}
+        <li>{{ item.name }} - PHP {{ item.price }} (Available)</li>
+        {% else %}
+        <li>{{ item.name }} - Unavailable</li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+
+    <h2>Try Budget Mode</h2>
+    <form action="/budget" method="post">
+        Enter your budget: <input type="number" name="budget" step="0.01" required>
+        <button type="submit">Suggest Meals</button>
+    </form>
+</body>
+</html>

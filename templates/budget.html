@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Budget Mode - Jorem’s Restaurant</title>
+</head>
+<body>
+    <h1>Budget Mode Suggestions - Jorem’s Restaurant</h1>
+    <p>Your budget: PHP {{ budget }}</p>
+
+    {% if suggested %}
+    <ul>
+        {% for item in suggested %}
+        <li>{{ item.name }} - PHP {{ item.price }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No meals fit within your budget or are available today.</p>
+    {% endif %}
+
+    <a href="/">Back to Menu</a>
+</body>
+</html>
