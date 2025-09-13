@@ -8,28 +8,33 @@
             text-align: center;
             background-color: #f8f8f8;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            padding-bottom: 50px; /* Add padding to bottom to prevent content being hidden */
         }
 
         h1, h3 {
-            margin-bottom: 20px;
+            margin: 15px 0;
         }
 
         table {
-            margin: 0 auto 20px auto;
+            margin: 20px auto;
             border-collapse: collapse;
-            width: 60%;
+            width: 80%;
             background-color: #fff;
+            box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
         }
 
         th, td {
             border: 1px solid #ccc;
             padding: 10px;
             text-align: center;
+            vertical-align: middle;
         }
 
         th {
             background-color: #f0b27a;
+            color: white;
+            font-size: 16px;
         }
 
         input[type="number"] {
@@ -37,19 +42,28 @@
             padding: 5px;
         }
 
+        td img {
+            width: 150px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
         button {
             padding: 10px 20px;
             margin: 10px;
-            background-color: #f0b27a;
+            background-color: #f39c12;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
+            color: white;
+           
         }
 
         button:hover {
             background-color: #d68910;
-            color: white;
         }
 
         form {
@@ -58,46 +72,139 @@
 
         a {
             text-decoration: none;
-            color: #f0b27a;
+            color: #f39c12;
             font-weight: bold;
         }
 
         a:hover {
             color: #d68910;
         }
+
+        .navbar {
+            background-color: #f39c12;
+            overflow: hidden;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+
+        .navbar a {
+            float: left;
+            display: block;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .navbar a:hover {
+            background-color: #e67e22;
+            color: #fff;
+        }
+
+        .navbar .brand {
+            float: left;
+            margin-top: 3px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .navbar-right {
+            float: right;
+            margin-right: 20px;
+        }
+
+        .action-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Adds space between items */
+            margin-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .action-container form {
+            margin-bottom: 0; /* Override default form margin */
+        }
+
+        .flash-success {
+            padding: 15px;
+            margin: 20px auto;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            width: 80%;
+        }
+
+        .add-to-cart-form {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
     </style>
 </head>
 <body>
+    <div class="navbar">
+        <a class="brand" href="/"> Jorem's Restaurant</a>
+        <div class="navbar-right">
+            <a href="{{ url_for('cart') }}">Cart</a>
+            {% if session.logged_in %}
+                <a href="{{ url_for('logout') }}">Logout </a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+            {% endif %}
+        </div>
+    </div>
+
     <h1>Welcome to Jorem's Restaurant</h1>
     <h3>Menu</h3>
-
-    <form action="/order" method="post">
-        <table>
-            <tr>
-                <th>Item</th>
-                <th>Price (PHP)</th>
-                <th>Quantity</th>
-            </tr>
-            {% for item in menu %}
-            <tr>
-                <td>{{ item.name }}</td>
-                <td>{{ item.price }}</td>
-                <td>
-                    <input type="number" name="quantity_{{ item.id }}" value="0" min="0">
-                </td>
-            </tr>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
             {% endfor %}
-        </table>
-        <button type="submit">Add to Cart</button>
-    </form>
+        {% endif %}
+    {% endwith %}
 
-    <form action="/budget" method="post">
-        <label>Enter your budget: 
-            <input type="number" name="budget" required>
-        </label>
-        <button type="submit">Try Budget Mode</button>
-    </form>
+    <table>
+        <tr>
+            <th>Image</th>
+            <th>Item</th>
+            <th>Price (PHP)</th>
+            <th>Action</th>
+        </tr>
+        {% for item in menu %}
+        <tr>
+            <td>
+                <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
+            </td>
+            <td>{{ item.name | safe}}</td>
+            <td>{{ item.price }}</td>
+            <td>
+                <form action="{{ url_for('add_item') }}" method="post" class="add-to-cart-form">
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    <input type="number" name="quantity" value="1" min="1">
+                    <button type="submit">Add to Cart</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
 
-    <a href="/cart">View Cart</a>
+    <div class="action-container">
+        <form action="/budget" method="post">
+            <label>Enter your budget: 
+                <input type="number" name="budget" required>
+            </label>
+            <button type="submit">Try Budget Mode</button>
+        </form>
+        <a href="/cart">View Cart</a>
+    </div>
 </body>
 </html>

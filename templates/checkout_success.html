@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Checkout Successful</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f8f8; text-align: center; margin: 0; padding: 20px; }
+        .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; max-width: 600px; width: 100%; }
+        h1 { color: #27ae60; }
+        table { margin: 20px auto; border-collapse: collapse; width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; vertical-align: middle; }
+        th { background: #82e0aa; }
+        .total-row td { font-weight: bold; font-size: 1.1em; }
+        a { display: inline-block; margin-top: 20px; text-decoration: none; color: #229954; font-weight: bold; }
+        a:hover { color: #145a32; }
+        td img {
+            width: 120px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Thank You For Your Order, {{ session.username }}!</h1>
+        <p>Your order has been placed successfully.</p>
+        <h3>Order Summary</h3>
+        <table>
+            <tr>
+                <th>Image</th>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+            </tr>
+            {% for item in order %}
+            <tr>
+                <td><img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}"></td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.qty }}</td>
+                <td>PHP {{ "%.2f"|format(item.subtotal) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="3">Total</td>
+                <td>PHP {{ "%.2f"|format(total) }}</td>
+            </tr>
+        </table>
+        <a href="/">Back to Menu</a>
+    </div>
+</body>
+</html>

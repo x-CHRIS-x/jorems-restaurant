@@ -23,6 +23,7 @@
             <input type="hidden" name="item_name_{{ item.id }}" value="{{ item.name }}">
             <input type="hidden" name="item_qty_{{ item.id }}" value="{{ item.qty }}">
             <input type="hidden" name="item_subtotal_{{ item.id }}" value="{{ item.subtotal }}">
+            <input type="hidden" name="item_image_{{ item.id }}" value="{{ item.image }}">
         {% endfor %}
         <button type="submit">Yes, continue anyway</button>
     </form>
