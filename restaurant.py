@@ -66,7 +66,12 @@ def budget_order():
             qty = 0
         if qty > 0:
             subtotal = qty * item["price"]
-            selected_items.append({"name": item["name"], "qty": qty, "subtotal": subtotal})
+            selected_items.append({
+                "id": item["id"],
+                "name": item["name"],
+                "qty": qty,
+                "subtotal": subtotal
+            })
             total += subtotal
 
     if total > budget:
@@ -92,15 +97,22 @@ def budget_order():
 
 @app.route("/order_confirm", methods=["POST"])
 def order_confirm():
-    # Accepts order even if over budget
+    # This accepts order even if over budget
     items = []
     total = float(request.form.get("total", 0))
-    for key in request.form:
-        if key.startswith("item_name"):
-            idx = key.split("_")[-1]
-            name = request.form.get(f"item_name", "")
-            qty = int(request.form.get(f"item_qty", 0))
-            subtotal = float(request.form.get(f"item_subtotal", 0))
+    print("/order_confirm POST data:", dict(request.form))  # DEBUG
+    # Collect all items from the form
+    for item in menu:
+        item_id = str(item["id"])
+        name = request.form.get(f"item_name_{item_id}")
+        qty = request.form.get(f"item_qty_{item_id}")
+        subtotal = request.form.get(f"item_subtotal_{item_id}")
+        if name and qty and subtotal:
+            try:
+                qty = int(qty)
+                subtotal = float(subtotal)
+            except ValueError:
+                continue
             items.append({"name": name, "qty": qty, "subtotal": subtotal})
     if "cart" not in session:
         session["cart"] = []
