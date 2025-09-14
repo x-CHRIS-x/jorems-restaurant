@@ -1,26 +1,12 @@
 
 from flask import Flask, render_template, request, session, redirect, url_for, flash
+from db import init_db
+from crud import *
 from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "legaspixyz"
-
-menu = [
-    {'id': 1, 'name': 'Tapsilog <br> Masarap to luto ni Marc Jorem Legazpi', 'price': 120, 'image': 'images/tapsilog.jpg'},
-    {'id': 2, 'name': 'Longsilog', 'price': 100, 'image': 'images/longsilog.jpg'},
-    {'id': 3, 'name': 'Tocilog', 'price': 100, 'image': 'images/tocilog.jpg'},
-    {'id': 4, 'name': 'Hotsilog', 'price': 90, 'image': 'images/hotsilog.jpg'},
-    {'id': 5, 'name': 'Bangsilog', 'price': 110, 'image': 'images/bangsilog.jpg'},
-    {'id': 6, 'name': 'Burger Combo', 'price': 150, 'image': 'images/burger-combo.jpg'},
-    {'id': 7, 'name': 'Spaghetti Combo', 'price': 140, 'image': 'images/spaghetti-combo.jpg'},
-    {'id': 8, 'name': 'Chicken with Rice', 'price': 130, 'image': 'images/chicken-rice.jpg'},
-    {'id': 9, 'name': 'Burger Steak with Rice', 'price': 135, 'image': 'images/burger-steak.jpg'}
-]
-
-users = {
-    "user1": "pass1",
-    "user2": "pass2"
-}
+    # Removed teardown_appcontext(close_db) since close_db is not imported
 
 def login_required(f):
     @wraps(f)
@@ -30,50 +16,75 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 @app.route("/")
 def index():
+    menu = get_menu_items()  # Use get_menu_items() from crud.py
     return render_template("index.html", menu=menu)
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
+
+        # Check if passwords match
+        if password != confirm_password:
+            return render_template("register.html", error="Passwords do not match")
+
+        # Check if user already exists
+        existing_user = get_user_by_username(username)
+        if existing_user:
+            return render_template("register.html", error="Username already taken")
+
+        # Create the user
+        create_user(username, password, is_staff=0)
+
+        flash("Registration successful! Please log in.")
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
 
 @app.route("/add_item", methods=["POST"])
 def add_item():
-    """Adds a single item to the cart."""
+    items = []
+    total = float(request.form.get("total", 0))
+    for item in get_menu_items():
+        item_id = str(item["id"])
+        name = request.form.get(f"item_name_{item_id}")
+        qty = request.form.get(f"item_qty_{item_id}")
+        subtotal = request.form.get(f"item_subtotal_{item_id}")
+        image = request.form.get(f"item_image_{item_id}")
+        if name and qty and subtotal and image:
+            try:
+                qty = int(qty)
+                subtotal = float(subtotal)
+            except ValueError:
+                continue
+            items.append({"name": name, "qty": qty, "subtotal": subtotal, "image": image})
     if "cart" not in session:
         session["cart"] = []
     cart = session["cart"]
-
-    item_id = int(request.form.get("item_id"))
-    quantity = int(request.form.get("quantity", 0))
-    
-    item_to_add = next((item for item in menu if item['id'] == item_id), None)
-
-    if item_to_add and quantity > 0:
+    for item in items:
         found = False
         for cart_item in cart:
-            if cart_item["name"] == item_to_add["name"]:
-                cart_item["qty"] += quantity
-                cart_item["subtotal"] += quantity * item_to_add["price"]
+            if cart_item["name"] == item["name"]:
+                cart_item["qty"] += item["qty"]
+                cart_item["subtotal"] += item["subtotal"]
                 found = True
                 break
         if not found:
-            cart.append({"name": item_to_add["name"], "qty": quantity, "subtotal": quantity * item_to_add["price"], "image": item_to_add["image"]})
-        flash(f'Added {quantity} x {item_to_add["name"]} to your cart.', 'success')
+            cart.append(item)
     session["cart"] = cart
     session.modified = True
-    return redirect(url_for("index"))
-
-@app.route("/budget", methods=["POST"])
-def budget():
-    budget = float(request.form.get("budget", 0))
-    suggested = [item for item in menu if item["price"] <= budget]
-    return render_template("budget.html", suggested=suggested, budget=budget)
-
+    return redirect(url_for("cart"))
 @app.route("/budget_order", methods=["POST"])
 def budget_order():
     budget = float(request.form.get("budget_value", 0))
     total = 0
     selected_items = []
-
-    for item in menu:
+    for item in get_menu_items():
         qty_str = request.form.get(f"quantity_{item['id']}")
         try:
             qty = int(qty_str) if qty_str else 0
@@ -89,10 +100,8 @@ def budget_order():
                 "image": item["image"]
             })
             total += subtotal
-
     if total > budget:
         return render_template("budget_exceed.html", total=total, budget=budget, order=selected_items)
-
     if "cart" not in session:
         session["cart"] = []
     cart = session["cart"]
@@ -110,12 +119,11 @@ def budget_order():
     session.modified = True
     return redirect(url_for("cart"))
 
-
 @app.route("/order_confirm", methods=["POST"])
 def order_confirm():
     items = []
     total = float(request.form.get("total", 0))
-    for item in menu:
+    for item in get_menu_items():
         item_id = str(item["id"])
         name = request.form.get(f"item_name_{item_id}")
         qty = request.form.get(f"item_qty_{item_id}")
@@ -150,10 +158,12 @@ def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        if username in users and users[username] == password:
+        user = get_user_by_username(username)
+        if user and user['password'] == password:
             session["logged_in"] = True
             session["username"] = username
-            return redirect(url_for("cart"))
+            session["user_id"] = user['id']
+            return redirect(url_for("index"))
         else:
             return render_template("login.html", error="Invalid username or password.")
     return render_template("login.html")
@@ -184,4 +194,6 @@ def clear_cart():
     return redirect(url_for("cart"))
 
 if __name__ == "__main__":
+    with app.app_context():
+        init_db()
     app.run(debug=True)
