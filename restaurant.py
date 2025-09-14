@@ -1,6 +1,4 @@
-
 from flask import Flask, render_template, request, session, redirect, url_for, flash
-from db import init_db
 from crud import *
 from functools import wraps
 
@@ -20,7 +18,20 @@ def login_required(f):
 @app.route("/")
 def index():
     menu = get_menu_items()  # Use get_menu_items() from crud.py
-    return render_template("index.html", menu=menu)
+    cart = session.get("cart", [])
+    
+    # Convert sqlite3.Row objects to dictionaries and add current quantity to each menu item
+    menu_list = []
+    for item in menu:
+        item_dict = dict(item)  # Convert Row to dictionary
+        item_dict["quantity"] = 0
+        for cart_item in cart:
+            if cart_item["name"] == item_dict["name"]:
+                item_dict["quantity"] = cart_item["qty"]
+                break
+        menu_list.append(item_dict)
+    
+    return render_template("index.html", menu=menu_list)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -79,6 +90,117 @@ def add_item():
     session["cart"] = cart
     session.modified = True
     return redirect(url_for("cart"))
+
+@app.route("/add_single_item", methods=["POST"])
+def add_single_item():
+    item_id = request.form.get("item_id")
+    name = request.form.get("item_name")
+    price = request.form.get("item_price")
+    qty = request.form.get("quantity")
+    image = request.form.get("item_image")
+    
+    if name and price and qty and image:
+        try:
+            qty = int(qty)
+            price = float(price)
+            subtotal = qty * price
+        except ValueError:
+            return redirect(url_for("index"))
+        
+        if "cart" not in session:
+            session["cart"] = []
+        
+        cart = session["cart"]
+        found = False
+        for cart_item in cart:
+            if cart_item["name"] == name:
+                cart_item["qty"] += qty
+                cart_item["subtotal"] += subtotal
+                found = True
+                break
+        
+        if not found:
+            cart.append({"name": name, "qty": qty, "subtotal": subtotal, "image": image})
+        
+        session["cart"] = cart
+        session.modified = True
+    
+    return redirect(url_for("cart"))
+
+@app.route("/update_cart", methods=["POST"])
+def update_cart():
+    item_id = request.form.get("item_id")
+    change = int(request.form.get("change", 0))
+    
+    if not item_id or change == 0:
+        return redirect(url_for("index"))
+    
+    # Get the menu item details
+    menu_items = get_menu_items()
+    item = None
+    for menu_item in menu_items:
+        if str(menu_item["id"]) == str(item_id):
+            item = menu_item
+            break
+    
+    if not item:
+        return redirect(url_for("index"))
+    
+    if "cart" not in session:
+        session["cart"] = []
+    
+    cart = session["cart"]
+    found = False
+    
+    # Find existing item in cart
+    for cart_item in cart:
+        if cart_item["name"] == item["name"]:
+            new_qty = cart_item["qty"] + change
+            if new_qty <= 0:
+                # Remove item from cart if quantity becomes 0 or negative
+                cart.remove(cart_item)
+            else:
+                # Update quantity and subtotal
+                cart_item["qty"] = new_qty
+                cart_item["subtotal"] = new_qty * item["price"]
+            found = True
+            break
+    
+    # If item not in cart and we're adding (change > 0)
+    if not found and change > 0:
+        cart.append({
+            "name": item["name"],
+            "qty": change,
+            "subtotal": change * item["price"],
+            "image": item["image"]
+        })
+    
+    session["cart"] = cart
+    session.modified = True
+    
+    return redirect(url_for("index"))
+
+
+@app.route("/budget_mode", methods=["POST"])
+def budget_mode():
+    budget = float(request.form.get("budget_value", 0))
+    menu = get_menu_items()
+    cart = session.get("cart", [])
+    suggested = []
+    
+    for item in menu:
+        if item["price"] <= budget:
+            # Convert Row to dictionary and add current quantity
+            item_dict = dict(item)
+            item_dict["quantity"] = 0
+            for cart_item in cart:
+                if cart_item["name"] == item_dict["name"]:
+                    item_dict["quantity"] = cart_item["qty"]
+                    break
+            suggested.append(item_dict)
+    
+    return render_template("budget_order.html", suggested=suggested, budget=budget)
+
 @app.route("/budget_order", methods=["POST"])
 def budget_order():
     budget = float(request.form.get("budget_value", 0))
@@ -178,6 +300,23 @@ def logout():
 def cart():
     return render_template("cart.html", cart=session.get("cart", []))
 
+@app.route("/checkout_confirm", methods=["POST"])
+@login_required
+def checkout_confirm():
+    cart_items = session.get("cart", [])
+    if not cart_items:
+        return redirect(url_for("cart"))
+    return render_template("checkout_confirm.html", cart=cart_items)
+
+@app.route("/confirm_checkout", methods=["POST"])
+@login_required
+def confirm_checkout():
+    cart_items = session.get("cart", [])
+    total = sum(item['subtotal'] for item in cart_items)
+    session["cart"] = []
+    session.modified = True
+    return render_template("checkout_success.html", order=cart_items, total=total)
+
 @app.route("/checkout", methods=["POST"])
 @login_required
 def checkout():
@@ -194,6 +333,4 @@ def clear_cart():
     return redirect(url_for("cart"))
 
 if __name__ == "__main__":
-    with app.app_context():
-        init_db()
     app.run(debug=True)

@@ -46,8 +46,8 @@
         <button type="submit">Clear Cart</button>
     </form>
     {% if session.logged_in %}
-        <form action="/checkout" method="post" style="display:inline;">
-            <button type="submit">Checkout</button>
+        <form action="/checkout_confirm" method="post" style="display:inline;">
+            <button type="submit">Proceed to Checkout</button>
         </form>
     {% else %}
         <a href="{{ url_for('login') }}">Login to Checkout</a>

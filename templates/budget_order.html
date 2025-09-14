@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Jorem's Restaurant Menu</title>
+    <title>Budget Mode - Jorem's Restaurant</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -9,7 +9,7 @@
             background-color: #f8f8f8;
             margin: 0;
             padding: 0;
-            padding-bottom: 50px; /* Add padding to bottom to prevent content being hidden */
+            padding-bottom: 50px;
         }
 
         h1, h3 {
@@ -59,7 +59,6 @@
             cursor: pointer;
             font-weight: bold;
             color: white;
-           
         }
 
         button:hover {
@@ -123,28 +122,25 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px; /* Adds space between items */
+            gap: 20px;
             margin-top: 20px;
             padding-bottom: 20px;
         }
 
         .action-container form {
-            margin-bottom: 0; /* Override default form margin */
+            margin-bottom: 0;
         }
 
-        .flash-success {
+        .budget-info {
+            background-color: #e8f5e8;
+            border: 2px solid #4caf50;
+            border-radius: 10px;
             padding: 15px;
             margin: 20px auto;
-            border: 1px solid transparent;
-            border-radius: 4px;
-            color: #155724;
-            background-color: #d4edda;
-            border-color: #c3e6cb;
             width: 80%;
-        }
-
-        .add-to-cart-form {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
         }
 
         .quantity-controls {
@@ -154,10 +150,10 @@
         }
 
         .quantity-btn {
-            width: 30px;
+            width: 40px;
             height: 30px;
             border: none;
-            border-radius: 50%;
+            border-radius: 5px;
             background-color: #f39c12;
             color: white;
             font-weight: bold;
@@ -165,18 +161,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .quantity-btn:hover {
             background-color: #d68910;
-        }
-
-        .quantity-display {
-            min-width: 30px;
-            text-align: center;
-            font-weight: bold;
-            padding: 5px;
         }
     </style>
 </head>
@@ -193,33 +182,29 @@
         </div>
     </div>
 
-    <h1>Welcome to Jorem's Restaurant</h1>
-    <h3>Menu</h3>
+    <h1>Budget Mode</h1>
+    <div class="budget-info">
+        Your Budget: PHP {{ budget }}
+    </div>
     
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
+    {% if suggested %}
+    <h3>Items Within Your Budget</h3>
     <table>
         <tr>
             <th>Image</th>
             <th>Item</th>
             <th>Price (PHP)</th>
-            <th>Action</th>
+            <th>Add to Cart</th>
         </tr>
-        {% for item in menu %}
+        {% for item in suggested %}
         <tr>
             <td>
                 <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
             </td>
-            <td>{{ item.name | safe}}</td>
+            <td>{{ item.name | safe }}</td>
             <td>{{ item.price }}</td>
             <td>
-                <div class="add-to-cart-form">
+                                <div class="add-to-cart-form">
                     <!-- Minus button -->
                     <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
                         <input type="hidden" name="item_id" value="{{ item.id }}">
@@ -241,15 +226,19 @@
         </tr>
         {% endfor %}
     </table>
-
     <div class="action-container">
-        <form action="/budget_mode" method="post">
-            <label>Enter your budget: 
-                <input type="number" name="budget_value" required>
-            </label>
-            <button type="submit">Try Budget Mode</button>
-        </form>
+        <a href="/">Back to Menu</a>
         <a href="/cart">View Cart</a>
     </div>
+    {% else %}
+    <div class="budget-info">
+        <p>No meals fit your budget of PHP {{ budget }} today.</p>
+        <p>Try increasing your budget or check our regular menu for more options.</p>
+    </div>
+    <div class="action-container">
+        <a href="/">Back to Menu</a>
+        <a href="/cart">View Cart</a>
+    </div>
+    {% endif %}
 </body>
 </html>
