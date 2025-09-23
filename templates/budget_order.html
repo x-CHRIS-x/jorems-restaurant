@@ -16,26 +16,15 @@
             margin: 15px 0;
         }
 
-        table {
-            margin: 20px auto;
-            border-collapse: collapse;
-            width: 80%;
-            background-color: #fff;
-            box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
-        }
-
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: #f0b27a;
-            color: white;
-            font-size: 16px;
-        }
+        /* Grid menu */
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }
+        .menu-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 12px; text-align: left; display: flex; flex-direction: column; height: 100%; }
+        .menu-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; }
+        .menu-card .title { margin: 10px 0 4px; font-weight: 700; }
+        .menu-card .price { color: #555; margin-bottom: 10px; }
+        .menu-card .controls { margin-top: auto; display: inline-flex; align-items: center; gap: 8px; }
+        .menu-card .controls form { margin: 0; }
+        .menu-card .controls .quantity-btn, .menu-card .controls .quantity-display { vertical-align: middle; }
 
         input[type="number"] {
             width: 60px;
@@ -123,7 +112,7 @@
             justify-content: center;
             align-items: center;
             gap: 20px;
-            margin-top: 20px;
+            margin-top: 80px;
             padding-bottom: 20px;
         }
 
@@ -149,6 +138,8 @@
         .quantity-btn {
             width: 32px;
             height: 32px;
+            padding: 0;
+            margin: 0;
             border: 1px solid #bdbdbd;
             border-radius: 6px;
             background-color: #e0e0e0;
@@ -168,6 +159,8 @@
         .quantity-display {
             min-width: 44px;
             height: 32px;
+            line-height: 32px;
+            box-sizing: border-box;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -184,8 +177,8 @@
         .quantity-btn { vertical-align: middle; }
         /* Layout */
         .page-container { display: flex; gap: 20px; align-items: flex-start; padding: 0 20px; }
-        .menu-section { flex: 1 1 65%; }
-        .cart-sidebar { flex: 0 0 32%; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 70px; height: calc(100vh - 90px); display: flex; flex-direction: column; }
+        .menu-section { flex: 1 1 70%; }
+        .cart-sidebar { flex: 0 0 20%; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 70px; height: calc(100vh - 90px); display: flex; flex-direction: column; }
         .cart-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .cart-items { overflow-y: auto; padding: 10px 15px; }
         .cart-item { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f1f1; }
@@ -198,8 +191,8 @@
         .trash-btn { background: transparent; border: none; cursor: pointer; }
         .trash-btn img { width: 18px; height: 18px; }
         .cart-footer { margin-top: auto; padding: 15px; border-top: 1px solid #eee; text-align: left; }
-        .totals-row { display: flex; justify-content: space-between; margin: 6px 0; }
-        .order-btn { width: 100%; background: #28a745; border: none; color: #fff; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .totals-row { display: flex; justify-content: space-between; margin: 15px 0; }
+        .order-btn { width: 93%; background: #28a745; border: none; color: #fff; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .order-btn:hover { background: #218838; }
     </style>
 </head>
@@ -225,38 +218,30 @@
             
             {% if suggested %}
             <h3>Items Within Your Budget</h3>
-            <table>
-                <tr>
-                    <th>Image</th>
-                    <th>Item</th>
-                    <th>Price (PHP)</th>
-                    <th>Add to Cart</th>
-                </tr>
+            <div class="menu-grid">
                 {% for item in suggested %}
-                <tr>
-                    <td>
-                        <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
-                    </td>
-                    <td>{{ item.name | safe }}</td>
-                    <td>{{ item.price }}</td>
-                    <td>
-                        <div class="add-to-cart-form">
-                            <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
-                                <input type="hidden" name="item_id" value="{{ item.id }}">
-                                <input type="hidden" name="change" value="-1">
-                                <button type="submit">-</button>
-                            </form>
-                            <span>{{ item.quantity }}</span>
-                            <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
-                                <input type="hidden" name="item_id" value="{{ item.id }}">
-                                <input type="hidden" name="change" value="1">
-                                <button type="submit">+</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
+                <div class="menu-card">
+                    <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
+                    <div class="title">{{ item.name | safe }}</div>
+                    <div class="price">₱ {{ '%.2f'|format(item.price) }}</div>
+                    <div class="controls">
+                        <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <input type="hidden" name="change" value="-1">
+                            <input type="hidden" name="return_to" value="budget_mode">
+                            <button type="submit" class="quantity-btn">-</button>
+                        </form>
+                        <span class="quantity-display">{{ item.quantity }}</span>
+                        <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <input type="hidden" name="change" value="1">
+                            <input type="hidden" name="return_to" value="budget_mode">
+                            <button type="submit" class="quantity-btn">+</button>
+                        </form>
+                    </div>
+                </div>
                 {% endfor %}
-            </table>
+            </div>
             <div class="action-container">
                 <a href="/">Back to Menu</a>
             </div>

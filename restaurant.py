@@ -169,6 +169,7 @@ def add_single_item():
 def update_cart():
     item_id = request.form.get("item_id")
     change = int(request.form.get("change", 0))
+    return_to = request.form.get("return_to")
     
     if not item_id or change == 0:
         return redirect(url_for("index"))
@@ -219,6 +220,9 @@ def update_cart():
     session["cart"] = cart
     session.modified = True
     
+    if return_to == "budget_mode":
+        # Return to budget mode without enforcing budget yet; enforcement happens on Order
+        return redirect(url_for("budget_mode"))
     return redirect(url_for("index"))
 
 @app.route("/remove_item", methods=["POST"])
@@ -233,9 +237,13 @@ def remove_item():
     return redirect(url_for("index"))
 
 
-@app.route("/budget_mode", methods=["POST"])
+@app.route("/budget_mode", methods=["GET", "POST"])
 def budget_mode():
-    budget = float(request.form.get("budget_value", 0))
+    if request.method == "POST":
+        budget = float(request.form.get("budget_value", 0))
+        session["budget_value"] = budget
+    else:
+        budget = float(session.get("budget_value", 0))
     menu = get_menu_items()
     session["cart"] = _ensure_cart_schema(session.get("cart", []))
     cart = session.get("cart", [])
@@ -362,6 +370,15 @@ def checkout_confirm():
     cart_items = session.get("cart", [])
     if not cart_items:
         return redirect(url_for("cart"))
+    # If budget mode is active, enforce budget before confirming
+    try:
+        budget_value = float(session.get("budget_value", 0))
+    except (TypeError, ValueError):
+        budget_value = 0
+    if budget_value > 0:
+        subtotal = sum(item['subtotal'] for item in cart_items)
+        if subtotal > budget_value:
+            return render_template("budget_exceed.html", total=subtotal, budget=budget_value, order=cart_items)
     return render_template("checkout_confirm.html", cart=cart_items)
 
 @app.route("/confirm_checkout", methods=["POST"])
@@ -377,6 +394,8 @@ def confirm_checkout():
         except Exception:
             pass
     session["cart"] = []
+    # Exit budget mode once checkout (or continue anyway) completes
+    session.pop("budget_value", None)
     session.modified = True
     return render_template("checkout_success.html", order=cart_items, total=total)
 

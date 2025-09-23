@@ -16,17 +16,9 @@
 <body>
     <h1>Budget Exceeded</h1>
     <p>Your total is PHP {{ total }}, but your budget is PHP {{ budget }}.</p>
-    <form action="/order_confirm" method="post" style="display:inline;">
-        <input type="hidden" name="total" value="{{ total }}">
-        {% for item in order %}
-            <input type="hidden" name="item_id_{{ item.id }}" value="{{ item.id }}">
-            <input type="hidden" name="item_name_{{ item.id }}" value="{{ item.name }}">
-            <input type="hidden" name="item_qty_{{ item.id }}" value="{{ item.qty }}">
-            <input type="hidden" name="item_subtotal_{{ item.id }}" value="{{ item.subtotal }}">
-            <input type="hidden" name="item_image_{{ item.id }}" value="{{ item.image }}">
-        {% endfor %}
+    <form action="{{ url_for('confirm_checkout') }}" method="post" style="display:inline;">
         <button type="submit">Yes, continue anyway</button>
     </form>
-    <a href="/">No, go back</a>
+    <a href="{{ url_for('budget_mode') }}">No, go back</a>
 </body>
 </html>

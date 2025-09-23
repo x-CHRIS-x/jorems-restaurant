@@ -24,32 +24,14 @@
             max-width: 800px;
         }
         
-        table {
-            margin: 0 auto 20px auto;
-            border-collapse: collapse;
-            width: 100%;
-            background: #fff;
-        }
-        
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        
-        th {
-            background: #f0b27a;
-            color: white;
-            font-size: 16px;
-        }
-        
-        td img {
-            width: 120px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 5px;
-        }
+        /* Grid */
+        .order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin: 0 auto 20px; }
+        .order-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 12px; text-align: left; display: flex; gap: 12px; align-items: center; }
+        .order-card img { width: 120px; height: 80px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+        .order-info { flex: 1; }
+        .order-name { font-weight: 700; margin-bottom: 4px; }
+        .order-qty { color: #555; margin-bottom: 6px; }
+        .order-sub { font-weight: 700; }
         
         .total-section {
             background: #e8f5e8;
@@ -179,24 +161,20 @@
     
     <div class="order-summary">
         <h3>Order Summary</h3>
-        <table>
-            <tr>
-                <th>Image</th>
-                <th>Item</th>
-                <th>Quantity</th>
-                <th>Subtotal</th>
-            </tr>
+        <div class="order-grid">
             {% set ns = namespace(total=0) %}
             {% for item in cart %}
-            <tr>
-                <td><img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}"></td>
-                <td>{{ item.name }}</td>
-                <td>{{ item.qty }}</td>
-                <td>PHP {{ "%.2f"|format(item.subtotal) }}</td>
-            </tr>
+            <div class="order-card">
+                <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
+                <div class="order-info">
+                    <div class="order-name">{{ item.name }}</div>
+                    <div class="order-qty">Qty: {{ item.qty }}</div>
+                    <div class="order-sub">₱ {{ "%.2f"|format(item.subtotal) }}</div>
+                </div>
+            </div>
             {% set ns.total = ns.total + item.subtotal %}
             {% endfor %}
-        </table>
+        </div>
         
         <div class="total-section">
             <h3>Total Amount: PHP {{ "%.2f"|format(ns.total) }}</h3>
