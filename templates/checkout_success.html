@@ -3,20 +3,81 @@
 <head>
     <title>Checkout Successful</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f8f8f8; text-align: center; margin: 0; padding: 20px; }
-        .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; max-width: 600px; width: 100%; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f8f8f8; 
+            text-align: center; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .container { 
+            background: #fff; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            display: inline-block; 
+            max-width: 600px; 
+            width: 100%; 
+        }
         h1 { color: #27ae60; }
-        table { margin: 20px auto; border-collapse: collapse; width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; vertical-align: middle; }
+        table { 
+            margin: 20px auto; 
+            border-collapse: collapse; 
+            width: 100%; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+        th, td { 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            text-align: center; 
+            vertical-align: middle; 
+        }
         th { background: #82e0aa; }
-        .total-row td { font-weight: bold; font-size: 1.1em; }
-        a { display: inline-block; margin-top: 20px; text-decoration: none; color: #229954; font-weight: bold; }
-        a:hover { color: #145a32; }
+        .total-row td { 
+            font-weight: bold; 
+            font-size: 1.1em; 
+        }
+        a { 
+            display: inline-block; 
+            margin-top: 20px; 
+            text-decoration: none; 
+            font-weight: bold; 
+        }
         td img {
             width: 120px;
             height: 80px;
             object-fit: cover;
             border-radius: 5px;
+        }
+        .qr { margin-top: 25px; }
+        .qr img {
+            width: 200px;
+            height: 200px;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            padding: 5px;
+            background: #fff;
+        }
+        /* ✅ Download button styling */
+        .btn-download {
+            display: inline-block;
+            margin: 15px;
+            padding: 10px 20px;
+            background: #2ecc71;
+            color: white;
+            font-weight: bold;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .btn-download:hover {
+            background: #27ae60;
+        }
+        .btn-back {
+            color: #229954;
+        }
+        .btn-back:hover {
+            color: #145a32;
         }
     </style>
 </head>
@@ -24,6 +85,7 @@
     <div class="container">
         <h1>Thank You For Your Order, {{ session.username }}!</h1>
         <p>Your order has been placed successfully.</p>
+
         <h3>Order Summary</h3>
         <table>
             <tr>
@@ -45,7 +107,20 @@
                 <td>PHP {{ "%.2f"|format(total) }}</td>
             </tr>
         </table>
-        <a href="/">Back to Menu</a>
+
+        <!-- ✅ QR Code Section -->
+        {% if qr_image %}
+        <div class="qr">
+            <h3>Scan QR Receipt</h3>
+            <img src="{{ qr_image }}" alt="QR Code Receipt">
+        </div>
+        {% endif %}
+
+        <!-- ✅ Download Receipt Button -->
+        <a href="{{ url_for('download_receipt') }}" class="btn-download">📥 Download Receipt (PDF)</a>
+
+        <br>
+        <a href="/" class="btn-back">⬅ Back to Menu</a>
     </div>
 </body>
 </html>

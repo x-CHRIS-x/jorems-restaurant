@@ -1,6 +1,12 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from crud import *
 from functools import wraps
+import qrcode
+import os
+from flask import send_file
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 
 app = Flask(__name__)
 app.secret_key = "legaspixyz"
@@ -386,18 +392,45 @@ def checkout_confirm():
 def confirm_checkout():
     cart_items = session.get("cart", [])
     total = sum(item['subtotal'] for item in cart_items)
-    # Optionally persist order with order number
+
+    if not cart_items:
+        flash("Cart is empty!", "danger")
+        return redirect(url_for("cart"))
+
+    # Save order in DB
+    order_id = None
     if session.get("logged_in"):
         user_id = session.get("user_id")
         try:
-            create_order(user_id, str(cart_items), total, status="pending")
-        except Exception:
-            pass
+            order_id = create_order(user_id, json.dumps(cart_items), total, status="pending")
+        except Exception as e:
+            print("DB error:", e)
+
+    # ✅ Generate QR Code with full order details
+    qr_data = f"Order #{order_id}\nTotal: ₱{total:.2f}\nItems:\n"
+    for item in cart_items:
+        qr_data += f"- {item['name']} x{item['qty']} (₱{item['subtotal']})\n"
+
+    qr_img = qrcode.make(qr_data)
+    qr_folder = os.path.join("static", "qr")
+    os.makedirs(qr_folder, exist_ok=True)
+    qr_path = os.path.join(qr_folder, f"order_{order_id or 'temp'}.png")
+    qr_img.save(qr_path)
+    
+    session["last_order"] = cart_items.copy()       
+    
     session["cart"] = []
-    # Exit budget mode once checkout (or continue anyway) completes
     session.pop("budget_value", None)
     session.modified = True
-    return render_template("checkout_success.html", order=cart_items, total=total)
+
+    return render_template(
+        "checkout_success.html",
+        order=cart_items,
+        total=total,
+        order_id=order_id,
+        qr_image=f"/{qr_path}"
+    )
+
 
 @app.route("/checkout", methods=["POST"])
 @login_required
@@ -420,5 +453,71 @@ def clear_cart():
     session.modified = True
     return redirect(url_for("cart"))
 
+
+@app.route("/download_receipt")
+def download_receipt():
+    cart_items = session.get("last_order")
+    if not cart_items:
+        flash("No recent order to download.", "warning")
+        return redirect(url_for("index"))
+
+    buffer = io.BytesIO()
+    
+    # Small receipt page size
+    from reportlab.lib.pagesizes import inch
+    receipt_width = 3 * inch
+    receipt_height = 5 * inch
+
+    pdf = canvas.Canvas(buffer, pagesize=(receipt_width, receipt_height))
+    
+    pdf.setFont("Helvetica-Bold", 10)
+    # Multi-line header
+    header_lines = [
+        "THANK YOU FOR YOUR ORDER",
+        "on JM Restaurant",
+        "Give this to cashier or staff"
+    ]
+    y = receipt_height - 20
+    for line in header_lines:
+        pdf.drawString(10, y, line)
+        y -= 12  # line spacing
+
+    y -= 10  # extra space before QR code
+
+    # Generate QR code
+    import qrcode
+    qr_data = "Order Details:\n"
+    total = 0
+    for item in cart_items:
+        qr_data += f"{item['name']} x{item['qty']} - ₱{item.get('price',0)*item['qty']:.2f}\n"
+        total += item.get('price',0)*item['qty']
+
+    qr_img = qrcode.make(qr_data)
+    qr_buffer = io.BytesIO()
+    qr_img.save(qr_buffer, format="PNG")
+    qr_buffer.seek(0)
+
+    # Embed QR code
+    from reportlab.lib.utils import ImageReader
+    qr_image = ImageReader(qr_buffer)
+    pdf.drawImage(qr_image, 10, y - 120, width=100, height=100)
+    y -= 130
+
+    pdf.setFont("Helvetica", 9)
+    for item in cart_items:
+        line = f"{item['name']} x{item['qty']} - ₱{item.get('price',0)*item['qty']:.2f}"
+        pdf.drawString(10, y, line)
+        y -= 12
+
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(10, y - 10, f"Total: ₱{total:.2f}")
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+
+    return send_file(buffer, as_attachment=True, download_name="receipt.pdf", mimetype="application/pdf")
+
+# ⬇️ this should stay last
 if __name__ == "__main__":
     app.run(debug=True)
