@@ -15,23 +15,59 @@ def login_required(f):
     return decorated_function
 
 
+def _ensure_cart_schema(cart_items):
+    # Ensure each cart item has price and image fields and correct subtotal
+    if not cart_items:
+        return []
+    menu_items = get_menu_items()
+    menu_index = {str(m["id"]): m for m in menu_items}
+    name_index = {m["name"]: m for m in menu_items}
+    normalized = []
+    for c in cart_items:
+        item_name = c.get("name")
+        menu_item = name_index.get(item_name)
+        price = c.get("price") if c.get("price") is not None else (menu_item["price"] if menu_item else 0)
+        image = c.get("image") if c.get("image") else (menu_item["image"] if menu_item else "")
+        qty = int(c.get("qty", 0))
+        subtotal = price * qty
+        normalized.append({
+            "id": menu_item["id"] if menu_item else None,
+            "name": item_name,
+            "qty": qty,
+            "price": price,
+            "subtotal": subtotal,
+            "image": image,
+        })
+    return normalized
+
+def _cart_summary(cart_items):
+    subtotal = sum(item["subtotal"] for item in cart_items)
+    taxes = round(subtotal * 0.12, 2)  # 12% VAT
+    total = round(subtotal + taxes, 2)
+    return subtotal, taxes, total
+
 @app.route("/")
 def index():
-    menu = get_menu_items()  # Use get_menu_items() from crud.py
+    menu = get_menu_items()
+    # Normalize session cart
+    session["cart"] = _ensure_cart_schema(session.get("cart", []))
     cart = session.get("cart", [])
-    
-    # Convert sqlite3.Row objects to dictionaries and add current quantity to each menu item
+
+    # Convert sqlite3.Row to dict and include current quantity in menu listing
     menu_list = []
     for item in menu:
-        item_dict = dict(item)  # Convert Row to dictionary
+        item_dict = dict(item)
         item_dict["quantity"] = 0
         for cart_item in cart:
             if cart_item["name"] == item_dict["name"]:
                 item_dict["quantity"] = cart_item["qty"]
                 break
         menu_list.append(item_dict)
-    
-    return render_template("index.html", menu=menu_list)
+
+    order_number = get_next_order_number()
+    subtotal, taxes, total = _cart_summary(cart)
+
+    return render_template("index.html", menu=menu_list, cart=cart, order_number=order_number, subtotal=subtotal, taxes=taxes, total=total)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -115,12 +151,14 @@ def add_single_item():
         for cart_item in cart:
             if cart_item["name"] == name:
                 cart_item["qty"] += qty
-                cart_item["subtotal"] += subtotal
+                cart_item["price"] = price
+                cart_item["image"] = image
+                cart_item["subtotal"] = cart_item["qty"] * price
                 found = True
                 break
         
         if not found:
-            cart.append({"name": name, "qty": qty, "subtotal": subtotal, "image": image})
+            cart.append({"name": name, "qty": qty, "price": price, "subtotal": subtotal, "image": image})
         
         session["cart"] = cart
         session.modified = True
@@ -162,6 +200,8 @@ def update_cart():
             else:
                 # Update quantity and subtotal
                 cart_item["qty"] = new_qty
+                cart_item["price"] = item["price"]
+                cart_item["image"] = item["image"]
                 cart_item["subtotal"] = new_qty * item["price"]
             found = True
             break
@@ -171,6 +211,7 @@ def update_cart():
         cart.append({
             "name": item["name"],
             "qty": change,
+            "price": item["price"],
             "subtotal": change * item["price"],
             "image": item["image"]
         })
@@ -180,11 +221,23 @@ def update_cart():
     
     return redirect(url_for("index"))
 
+@app.route("/remove_item", methods=["POST"])
+def remove_item():
+    name = request.form.get("item_name")
+    if not name:
+        return redirect(url_for("index"))
+    cart = session.get("cart", [])
+    cart = [c for c in cart if c.get("name") != name]
+    session["cart"] = cart
+    session.modified = True
+    return redirect(url_for("index"))
+
 
 @app.route("/budget_mode", methods=["POST"])
 def budget_mode():
     budget = float(request.form.get("budget_value", 0))
     menu = get_menu_items()
+    session["cart"] = _ensure_cart_schema(session.get("cart", []))
     cart = session.get("cart", [])
     suggested = []
     
@@ -199,7 +252,9 @@ def budget_mode():
                     break
             suggested.append(item_dict)
     
-    return render_template("budget_order.html", suggested=suggested, budget=budget)
+    order_number = get_next_order_number()
+    subtotal, taxes, total = _cart_summary(cart)
+    return render_template("budget_order.html", suggested=suggested, budget=budget, cart=cart, order_number=order_number, subtotal=subtotal, taxes=taxes, total=total)
 
 @app.route("/budget_order", methods=["POST"])
 def budget_order():
@@ -218,6 +273,7 @@ def budget_order():
                 "id": item["id"],
                 "name": item["name"],
                 "qty": qty,
+                "price": item["price"],
                 "subtotal": subtotal,
                 "image": item["image"]
             })
@@ -313,6 +369,13 @@ def checkout_confirm():
 def confirm_checkout():
     cart_items = session.get("cart", [])
     total = sum(item['subtotal'] for item in cart_items)
+    # Optionally persist order with order number
+    if session.get("logged_in"):
+        user_id = session.get("user_id")
+        try:
+            create_order(user_id, str(cart_items), total, status="pending")
+        except Exception:
+            pass
     session["cart"] = []
     session.modified = True
     return render_template("checkout_success.html", order=cart_items, total=total)
@@ -322,6 +385,12 @@ def confirm_checkout():
 def checkout():
     cart_items = session.get("cart", [])
     total = sum(item['subtotal'] for item in cart_items)
+    if session.get("logged_in"):
+        user_id = session.get("user_id")
+        try:
+            create_order(user_id, str(cart_items), total, status="pending")
+        except Exception:
+            pass
     session["cart"] = []
     session.modified = True
     return render_template("checkout_success.html", order=cart_items, total=total)

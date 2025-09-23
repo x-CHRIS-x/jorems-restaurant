@@ -111,3 +111,13 @@ def delete_order(order_id):
     cursor.execute("DELETE FROM orders WHERE id = ?", (order_id,))
     conn.commit()
     conn.close()
+
+
+# ORDER UTILS
+def get_next_order_number():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM orders")
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else 1

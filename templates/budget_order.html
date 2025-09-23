@@ -127,9 +127,7 @@
             padding-bottom: 20px;
         }
 
-        .action-container form {
-            margin-bottom: 0;
-        }
+        .action-container form { margin-bottom: 0; }
 
         .budget-info {
             background-color: #e8f5e8;
@@ -143,30 +141,66 @@
             color: #2e7d32;
         }
 
-        .quantity-controls {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .quantity-controls { display: inline-flex; align-items: center; gap: 6px; }
+        .quantity-controls form { margin: 0; }
+        .add-to-cart-form { display: inline-flex; align-items: center; gap: 8px; }
+        .add-to-cart-form form { margin: 0; }
 
         .quantity-btn {
-            width: 40px;
-            height: 30px;
-            border: none;
-            border-radius: 5px;
-            background-color: #f39c12;
-            color: white;
-            font-weight: bold;
+            width: 32px;
+            height: 32px;
+            border: 1px solid #bdbdbd;
+            border-radius: 6px;
+            background-color: #e0e0e0;
+            color: #333;
+            font-weight: 700;
             cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .quantity-btn:hover {
-            background-color: #d68910;
+            background-color: #cfcfcf;
         }
+
+        .quantity-display {
+            min-width: 44px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 700;
+            padding: 0 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fff;
+            color: #333;
+            vertical-align: middle;
+        }
+
+        .quantity-btn { vertical-align: middle; }
+        /* Layout */
+        .page-container { display: flex; gap: 20px; align-items: flex-start; padding: 0 20px; }
+        .menu-section { flex: 1 1 65%; }
+        .cart-sidebar { flex: 0 0 32%; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 70px; height: calc(100vh - 90px); display: flex; flex-direction: column; }
+        .cart-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .cart-items { overflow-y: auto; padding: 10px 15px; }
+        .cart-item { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f1f1; }
+        .cart-item img { width: 60px; height: 40px; object-fit: cover; border-radius: 6px; }
+        .cart-item-info { flex: 1; text-align: left; }
+        .cart-item-name { font-weight: bold; }
+        .cart-item-price { color: #666; font-size: 12px; }
+        .cart-qty-controls { display: inline-flex; align-items: center; gap: 6px; }
+        .cart-qty-controls form { margin: 0; }
+        .trash-btn { background: transparent; border: none; cursor: pointer; }
+        .trash-btn img { width: 18px; height: 18px; }
+        .cart-footer { margin-top: auto; padding: 15px; border-top: 1px solid #eee; text-align: left; }
+        .totals-row { display: flex; justify-content: space-between; margin: 6px 0; }
+        .order-btn { width: 100%; background: #28a745; border: none; color: #fff; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .order-btn:hover { background: #218838; }
     </style>
 </head>
 <body>
@@ -182,63 +216,114 @@
         </div>
     </div>
 
-    <h1>Budget Mode</h1>
-    <div class="budget-info">
-        Your Budget: PHP {{ budget }}
-    </div>
-    
-    {% if suggested %}
-    <h3>Items Within Your Budget</h3>
-    <table>
-        <tr>
-            <th>Image</th>
-            <th>Item</th>
-            <th>Price (PHP)</th>
-            <th>Add to Cart</th>
-        </tr>
-        {% for item in suggested %}
-        <tr>
-            <td>
-                <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
-            </td>
-            <td>{{ item.name | safe }}</td>
-            <td>{{ item.price }}</td>
-            <td>
-                                <div class="add-to-cart-form">
-                    <!-- Minus button -->
-                    <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
-                        <input type="hidden" name="item_id" value="{{ item.id }}">
-                        <input type="hidden" name="change" value="-1">
-                        <button type="submit">-</button>
-                    </form>
+    <div class="page-container">
+        <div class="menu-section">
+            <h1>Budget Mode</h1>
+            <div class="budget-info">
+                Your Budget: PHP {{ budget }}
+            </div>
+            
+            {% if suggested %}
+            <h3>Items Within Your Budget</h3>
+            <table>
+                <tr>
+                    <th>Image</th>
+                    <th>Item</th>
+                    <th>Price (PHP)</th>
+                    <th>Add to Cart</th>
+                </tr>
+                {% for item in suggested %}
+                <tr>
+                    <td>
+                        <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
+                    </td>
+                    <td>{{ item.name | safe }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>
+                        <div class="add-to-cart-form">
+                            <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
+                                <input type="hidden" name="item_id" value="{{ item.id }}">
+                                <input type="hidden" name="change" value="-1">
+                                <button type="submit">-</button>
+                            </form>
+                            <span>{{ item.quantity }}</span>
+                            <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
+                                <input type="hidden" name="item_id" value="{{ item.id }}">
+                                <input type="hidden" name="change" value="1">
+                                <button type="submit">+</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            <div class="action-container">
+                <a href="/">Back to Menu</a>
+            </div>
+            {% else %}
+            <div class="budget-info">
+                <p>No meals fit your budget of PHP {{ budget }} today.</p>
+                <p>Try increasing your budget or check our regular menu for more options.</p>
+            </div>
+            <div class="action-container">
+                <a href="/">Back to Menu</a>
+            </div>
+            {% endif %}
+        </div>
 
-                    <!-- Current quantity -->
-                    <span>{{ item.quantity }}</span>
-
-                    <!-- Plus button -->
-                    <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
-                        <input type="hidden" name="item_id" value="{{ item.id }}">
-                        <input type="hidden" name="change" value="1">
-                        <button type="submit">+</button>
-                    </form>
-                </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <div class="action-container">
-        <a href="/">Back to Menu</a>
-        <a href="/cart">View Cart</a>
+        <aside class="cart-sidebar">
+            <div class="cart-header">
+                <div><strong>Order #{{ order_number }}</strong></div>
+                <div>{{ cart|length }} item(s)</div>
+            </div>
+            <div class="cart-items">
+                {% if cart and cart|length > 0 %}
+                    {% for item in cart %}
+                    <div class="cart-item">
+                        <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">{{ item.name }}</div>
+                            <div class="cart-item-price">₱ {{ '%.2f'|format(item.price) }}</div>
+                            <div class="cart-qty-controls">
+                                <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    <input type="hidden" name="change" value="-1">
+                                    <button type="submit" class="quantity-btn">-</button>
+                                </form>
+                                <span class="quantity-display">{{ item.qty }}</span>
+                                <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    <input type="hidden" name="change" value="1">
+                                    <button type="submit" class="quantity-btn">+</button>
+                                </form>
+                                <form action="{{ url_for('remove_item') }}" method="post" style="display:inline; margin-left:8px;">
+                                    <input type="hidden" name="item_name" value="{{ item.name }}">
+                                    <button type="submit" class="trash-btn" title="Remove">
+                                        <img src="{{ url_for('static', filename='images/trash.png') }}" alt="Remove">
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div><strong>₱ {{ '%.2f'|format(item.subtotal) }}</strong></div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Your cart is empty.</p>
+                {% endif %}
+            </div>
+            <div class="cart-footer">
+                <div class="totals-row"><span>Subtotal</span><span>₱ {{ '%.2f'|format(subtotal) }}</span></div>
+                <div class="totals-row"><span>Taxes</span><span>₱ {{ '%.2f'|format(taxes) }}</span></div>
+                <div class="totals-row" style="font-weight:bold;"><span>Total</span><span>₱ {{ '%.2f'|format(total) }}</span></div>
+                {% if session.logged_in %}
+                <form action="{{ url_for('checkout_confirm') }}" method="post">
+                    <button type="submit" class="order-btn">Order</button>
+                </form>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="order-btn" style="display:inline-block; text-align:center; text-decoration:none;">Login to Order</a>
+                {% endif %}
+            </div>
+        </aside>
     </div>
-    {% else %}
-    <div class="budget-info">
-        <p>No meals fit your budget of PHP {{ budget }} today.</p>
-        <p>Try increasing your budget or check our regular menu for more options.</p>
-    </div>
-    <div class="action-container">
-        <a href="/">Back to Menu</a>
-        <a href="/cart">View Cart</a>
-    </div>
-    {% endif %}
 </body>
 </html>
