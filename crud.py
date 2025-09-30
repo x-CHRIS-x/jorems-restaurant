@@ -1,5 +1,7 @@
 # crud.py
 import sqlite3
+from contextlib import contextmanager
+from werkzeug.security import generate_password_hash, check_password_hash
 
 DATABASE = "database/database.db"
 
@@ -12,9 +14,10 @@ def get_connection():
 def create_user(username, password, is_staff=0):
     conn = get_connection()
     cursor = conn.cursor()
+    hashed_password = generate_password_hash(password)
     cursor.execute(
         "INSERT INTO users (username, password, is_staff) VALUES (?, ?, ?)",
-        (username, password, is_staff)
+        (username, hashed_password, is_staff)
     )
     conn.commit()
     conn.close()
@@ -30,7 +33,8 @@ def get_user_by_username(username):
 def update_user_password(user_id, new_password):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password, user_id))
+    hashed_password = generate_password_hash(new_password)
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_password, user_id))
     conn.commit()
     conn.close()
 
@@ -61,6 +65,14 @@ def get_menu_items():
     conn.close()
     return items
 
+def get_menu_item_by_id(item_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM menu_items WHERE id = ?", (item_id,))
+    item = cursor.fetchone()
+    conn.close()
+    return item
+
 def update_menu_item(item_id, name, price, image):
     conn = get_connection()
     cursor = conn.cursor()
@@ -87,8 +99,10 @@ def create_order(user_id, items, total, status="pending"):
         "INSERT INTO orders (user_id, items, total, status) VALUES (?, ?, ?, ?)",
         (user_id, items, total, status)
     )
+    order_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    return order_id
 
 def get_orders():
     conn = get_connection()

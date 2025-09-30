@@ -207,9 +207,12 @@
     <div class="navbar">
         <a class="brand" href="/"> Jorem's Restaurant</a>
         <div class="navbar-right">
-            <a href="{{ url_for('cart') }}">Cart</a>
+            {% if not session.is_staff %}
+                <a href="{{ url_for('cart') }}">Cart</a>
+            {% endif %}
             {% if session.logged_in %}
-                <a href="{{ url_for('logout') }}">Logout </a>
+                {% if session.is_staff %}<a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>{% endif %}
+                <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
                 <a href="{{ url_for('login') }}">Login</a>
             {% endif %}

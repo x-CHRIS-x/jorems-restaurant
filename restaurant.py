@@ -1,12 +1,17 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from crud import *
+from werkzeug.security import check_password_hash
 from functools import wraps
-import qrcode
+from werkzeug.utils import secure_filename
 import os
 from flask import send_file
 import io
+import json
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+
+UPLOAD_FOLDER = 'static/images'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app = Flask(__name__)
 app.secret_key = "legaspixyz"
@@ -16,6 +21,15 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if "logged_in" not in session:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def staff_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in") or not session.get("is_staff"):
+            flash("You do not have permission to access this page.", "danger")
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
@@ -94,7 +108,7 @@ def register():
         # Create the user
         create_user(username, password, is_staff=0)
 
-        flash("Registration successful! Please log in.")
+        flash("Registration successful! Please log in.", "success")
         return redirect(url_for("login"))
 
     return render_template("register.html")
@@ -351,19 +365,37 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
         user = get_user_by_username(username)
-        if user and user['password'] == password:
-            session["logged_in"] = True
-            session["username"] = username
-            session["user_id"] = user['id']
-            return redirect(url_for("index"))
-        else:
-            return render_template("login.html", error="Invalid username or password.")
+
+        if user:
+            # Check for modern hashed password first
+            is_valid = check_password_hash(user['password'], password)
+
+            # If hash check fails, check for legacy plain-text password
+            if not is_valid and user['password'] == password:
+                is_valid = True
+                # Upgrade the password to a secure hash in the background
+                update_user_password(user['id'], password)
+                flash("Your password has been securely updated!", "info")
+
+            if is_valid:
+                session["logged_in"] = True
+                session["username"] = username
+                session["user_id"] = user['id']
+                session["is_staff"] = user['is_staff']
+                
+                if user['is_staff']:
+                    flash(f"Welcome back, Staff {user['username']}!", "info")
+                    return redirect(url_for("staff_dashboard"))
+                return redirect(url_for("index"))
+
+        return render_template("login.html", error="Invalid username or password.")
     return render_template("login.html")
 
 @app.route("/logout")
 def logout():
     session.pop("logged_in", None)
     session.pop("username", None)
+    session.pop("is_staff", None)
     return redirect(url_for("index"))
 
 @app.route("/cart")
@@ -440,7 +472,7 @@ def checkout():
     if session.get("logged_in"):
         user_id = session.get("user_id")
         try:
-            create_order(user_id, str(cart_items), total, status="pending")
+            create_order(user_id, json.dumps(cart_items), total, status="pending")
         except Exception:
             pass
     session["cart"] = []
@@ -485,12 +517,11 @@ def download_receipt():
     y -= 10  # extra space before QR code
 
     # Generate QR code
-    import qrcode
     qr_data = "Order Details:\n"
     total = 0
     for item in cart_items:
-        qr_data += f"{item['name']} x{item['qty']} - ₱{item.get('price',0)*item['qty']:.2f}\n"
-        total += item.get('price',0)*item['qty']
+        qr_data += f"{item['name']} x{item['qty']} - ₱{item.get('subtotal', 0):.2f}\n"
+        total += item.get('subtotal', 0)
 
     qr_img = qrcode.make(qr_data)
     qr_buffer = io.BytesIO()
@@ -505,7 +536,7 @@ def download_receipt():
 
     pdf.setFont("Helvetica", 9)
     for item in cart_items:
-        line = f"{item['name']} x{item['qty']} - ₱{item.get('price',0)*item['qty']:.2f}"
+        line = f"{item['name']} x{item['qty']} - ₱{item.get('subtotal', 0):.2f}"
         pdf.drawString(10, y, line)
         y -= 12
 
@@ -517,6 +548,93 @@ def download_receipt():
     buffer.seek(0)
 
     return send_file(buffer, as_attachment=True, download_name="receipt.pdf", mimetype="application/pdf")
+
+# --- STAFF ROUTES ---
+@app.route("/staff")
+@staff_required
+def staff_dashboard():
+    menu_items = get_menu_items()
+    return render_template("staff_dashboard.html", menu_items=menu_items)
+
+@app.route("/staff/add_item", methods=["POST"])
+@staff_required
+def staff_add_item():
+    name = request.form.get("name")
+    price = request.form.get("price")
+    image_file = request.files.get('image')
+
+    if name and price and image_file:
+        try:
+            # Save the uploaded file
+            filename = secure_filename(image_file.filename)
+            if '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS:
+                # Ensure the upload folder exists
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                image_path = os.path.join(UPLOAD_FOLDER, filename)
+                image_file.save(image_path)
+                
+                # Store the relative path
+                db_image_path = os.path.join('images', filename).replace('\\', '/')
+                create_menu_item(name, float(price), db_image_path)
+            else:
+                flash("Invalid image file type.", "danger")
+                return redirect(url_for("staff_dashboard"))
+
+            flash("Menu item added successfully!", "success")
+        except Exception as e:
+            flash(f"Error adding item: {e}", "danger")
+    else:
+        flash("All fields are required.", "warning")
+    return redirect(url_for("staff_dashboard"))
+
+@app.route("/staff/edit_item/<int:item_id>", methods=["GET", "POST"])
+@staff_required
+def staff_edit_item(item_id):
+    item = get_menu_item_by_id(item_id)
+    if not item:
+        flash("Menu item not found.", "danger")
+        return redirect(url_for("staff_dashboard"))
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        price = request.form.get("price")
+        image_file = request.files.get('image')
+
+        db_image_path = item['image'] # Keep old image by default
+
+        if image_file and image_file.filename != '':
+            # A new file was uploaded, so save it
+            filename = secure_filename(image_file.filename)
+            if '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS:
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                image_path = os.path.join(UPLOAD_FOLDER, filename)
+                image_file.save(image_path)
+                db_image_path = os.path.join('images', filename).replace('\\', '/')
+            else:
+                flash("Invalid image file type. Item not updated.", "danger")
+                return render_template("edit_menu_item.html", item=item)
+        if name and price:
+            try:
+                update_menu_item(item_id, name, float(price), db_image_path)
+                flash("Menu item updated successfully!", "success")
+                return redirect(url_for("staff_dashboard"))
+            except Exception as e:
+                flash(f"Error updating item: {e}", "danger")
+        else:
+            flash("All fields are required.", "warning")
+    
+    return render_template("edit_menu_item.html", item=item)
+
+@app.route("/staff/delete_item/<int:item_id>", methods=["POST"])
+@staff_required
+def staff_delete_item(item_id):
+    try:
+        delete_menu_item(item_id)
+        flash("Menu item deleted successfully!", "success")
+    except Exception as e:
+        flash(f"Error deleting item: {e}", "danger")
+    return redirect(url_for("staff_dashboard"))
+
 
 # ⬇️ this should stay last
 if __name__ == "__main__":
