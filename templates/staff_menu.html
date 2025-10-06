@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Jorem's Restaurant Menu</title>
+    <title>Staff Menu View - Jorem's Restaurant</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -9,7 +9,7 @@
             background-color: #f8f8f8;
             margin: 0;
             padding: 0;
-            padding-bottom: 50px; /* Add padding to bottom to prevent content being hidden */
+            padding-bottom: 50px;
         }
 
         h1, h3 {
@@ -112,13 +112,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px; /* Adds space between items */
+            gap: 20px;
             margin-top: 20px;
             padding-bottom: 20px;
         }
 
         .action-container form {
-            margin-bottom: 0; /* Override default form margin */
+            margin-bottom: 0;
         }
 
         .flash-success {
@@ -205,25 +205,18 @@
 </head>
 <body>
     <div class="navbar">
-        <a class="brand" href="/"> Jorem's Restaurant</a>
+        <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
         <div class="navbar-right">
-            {% if session.logged_in %}
-                {% if session.is_staff %}
-                    <a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>
-                    <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
-                {% else %}
-                    <a href="{{ url_for('cart') }}">Cart</a>
-                {% endif %}
-                <a href="{{ url_for('logout') }}">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-            {% endif %}
+            <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
+            <a href="{{ url_for('table_list') }}">Tables</a>
+            <a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
         </div>
     </div>
 
     <div class="page-container">
         <div class="menu-section">
-            <h1>Welcome to Jorem's Restaurant</h1>
+            <h1>Staff Menu View</h1>
             <h3>Menu</h3>
             
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -244,12 +237,14 @@
                         <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
                             <input type="hidden" name="item_id" value="{{ item.id }}">
                             <input type="hidden" name="change" value="-1">
+                            <input type="hidden" name="return_to" value="staff_menu">
                             <button type="submit" class="quantity-btn">-</button>
                         </form>
                         <span class="quantity-display">{{ item.quantity }}</span>
                         <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
                             <input type="hidden" name="item_id" value="{{ item.id }}">
                             <input type="hidden" name="change" value="1">
+                            <input type="hidden" name="return_to" value="staff_menu">
                             <button type="submit" class="quantity-btn">+</button>
                         </form>
                     </div>
@@ -312,9 +307,12 @@
                 <div class="totals-row"><span>Taxes</span><span>₱ {{ '%.2f'|format(taxes) }}</span></div>
                 <div class="totals-row" style="font-weight:bold;"><span>Total</span><span>₱ {{ '%.2f'|format(total) }}</span></div>
                 {% if session.logged_in %}
-                <form action="{{ url_for('checkout_confirm') }}" method="post">
-                    <button type="submit" class="order-btn">Order</button>
-                </form>
+                <div class="button-group" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <a href="{{ url_for('tables') }}" class="order-btn" style="width: 45%; background-color: #f39c12;">Select Table</a>
+                    <form action="{{ url_for('checkout_confirm') }}" method="post" style="width: 45%; margin: 0;">
+                        <button type="submit" class="order-btn" style="width: 100%;">Order</button>
+                    </form>
+                </div>
                 {% else %}
                 <a href="{{ url_for('login') }}" class="order-btn" style="display:inline-block; text-align:center; text-decoration:none;">Login to Order</a>
                 {% endif %}

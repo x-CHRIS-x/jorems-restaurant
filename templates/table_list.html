@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Table List - Jorem's Restaurant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 50px;
+        }
+
+        .navbar {
+            background-color: #f39c12;
+            overflow: hidden;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+
+        .navbar a {
+            float: left;
+            display: block;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .navbar a:hover {
+            background-color: #e67e22;
+            color: #fff;
+        }
+
+        .navbar .brand {
+            float: left;
+            margin-top: 3px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .navbar-right {
+            float: right;
+            margin-right: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h3 {
+            margin: 15px 0;
+        }
+
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .table-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        .table-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .table-capacity {
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .status-available {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-occupied {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            background-color: #f39c12;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: #e67e22;
+        }
+
+        .action-button.clear {
+            background-color: #dc3545;
+        }
+
+        .action-button.clear:hover {
+            background-color: #c82333;
+        }
+
+        .flash-message {
+            padding: 15px;
+            margin: 20px auto;
+            border-radius: 4px;
+            max-width: 80%;
+        }
+
+        .flash-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .flash-error {
+            background-color: #f8d7da;
+            border-color: #f5c2c7;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
+        <div class="navbar-right">
+            <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
+            <a href="{{ url_for('table_list') }}">Tables</a>
+            <a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Table Management</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="table-grid">
+            {% for table in tables %}
+            <div class="table-card">
+                <div class="table-number">Table {{ table.table_number }}</div>
+                <div class="table-capacity">Capacity: {{ table.capacity }} persons</div>
+                <div class="status-badge status-{{ table.status }}">
+                    {{ table.status|title }}
+                </div>
+                {% if table.status == 'occupied' %}
+                <form action="{{ url_for('clear_table') }}" method="post">
+                    <input type="hidden" name="table_id" value="{{ table.id }}">
+                    <button type="submit" class="action-button clear" onclick="return confirm('Are you sure you want to mark this table as available?')">
+                        Clear Table
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

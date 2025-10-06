@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from crud import *
+from crud_tables import *
 from werkzeug.security import check_password_hash
 from functools import wraps
 from werkzeug.utils import secure_filename
@@ -7,16 +8,19 @@ import os
 from flask import send_file
 import io
 import json
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 import qrcode
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import inch
+
+app = Flask(__name__)
+app.secret_key = "legaspixyz"
+
+# Initialize database tables
+init_tables()
 
 
 UPLOAD_FOLDER = 'static/images'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-app = Flask(__name__)
-app.secret_key = "legaspixyz"
 
 
 def login_required(f):
@@ -245,17 +249,27 @@ def update_cart():
     if return_to == "budget_mode":
         # Return to budget mode without enforcing budget yet; enforcement happens on Order
         return redirect(url_for("budget_mode"))
+    elif return_to == "tables":
+        return redirect(url_for("tables"))
+    elif return_to == "staff_menu":
+        return redirect(url_for("staff_menu"))
     return redirect(url_for("index"))
 
 @app.route("/remove_item", methods=["POST"])
 def remove_item():
     name = request.form.get("item_name")
+    return_to = request.form.get("return_to")
     if not name:
         return redirect(url_for("index"))
     cart = session.get("cart", [])
     cart = [c for c in cart if c.get("name") != name]
     session["cart"] = cart
     session.modified = True
+    
+    if return_to == "tables":
+        return redirect(url_for("tables"))
+    elif return_to == "staff_menu":
+        return redirect(url_for("staff_menu"))
     return redirect(url_for("index"))
 
 
@@ -390,7 +404,7 @@ def login():
                     return redirect(url_for("staff_dashboard"))
                 return redirect(url_for("index"))
 
-        return render_template("login.html", error="Invalid username or password.")
+        flash("Invalid username or password")
     return render_template("login.html")
 
 @app.route("/logout")
@@ -437,6 +451,13 @@ def confirm_checkout():
         user_id = session.get("user_id")
         try:
             order_id = create_order(user_id, json.dumps(cart_items), total, status="pending")
+            
+            # If this is a staff order and a table was selected, assign it
+            if session.get("is_staff") and session.get("selected_table"):
+                table_id = session["selected_table"]["id"]
+                assign_table_to_order(table_id, order_id)
+                session.pop("selected_table", None)  # Clear selected table from session
+                
         except Exception as e:
             print("DB error:", e)
 
@@ -552,11 +573,97 @@ def download_receipt():
     return send_file(buffer, as_attachment=True, download_name="receipt.pdf", mimetype="application/pdf")
 
 # --- STAFF ROUTES ---
+@app.route("/staff/tables")
+@staff_required
+def tables():
+    tables = get_tables()
+    # Get cart information
+    session["cart"] = _ensure_cart_schema(session.get("cart", []))
+    cart = session.get("cart", [])
+    order_number = get_next_order_number()
+    subtotal, taxes, total = _cart_summary(cart)
+    
+    return render_template("tables.html", 
+                         tables=tables,
+                         cart=cart,
+                         order_number=order_number,
+                         subtotal=subtotal,
+                         taxes=taxes,
+                         total=total,
+                         selected_table=session.get("selected_table"))
+
+@app.route("/staff/select_table", methods=["POST"])
+@staff_required
+def select_table():
+    table_id = request.form.get("table_id")
+    table_number = request.form.get("table_number")
+    if not table_id or not table_number:
+        flash("No table selected", "error")
+        return redirect(url_for("tables"))
+    
+    # Store selected table in session
+    session["selected_table"] = {
+        "id": table_id,
+        "number": table_number
+    }
+    session.modified = True
+    
+    flash(f"Table {table_number} selected for this order", "success")
+    return redirect(url_for("tables"))
+
+@app.route("/staff/unselect_table", methods=["POST"])
+@staff_required
+def unselect_table():
+    session.pop("selected_table", None)
+    session.modified = True
+    return redirect(url_for("tables"))
+
+@app.route("/staff/menu")
+@staff_required
+def staff_menu():
+    menu = get_menu_items()
+    # Normalize session cart
+    session["cart"] = _ensure_cart_schema(session.get("cart", []))
+    cart = session.get("cart", [])
+
+    # Convert sqlite3.Row to dict and include current quantity in menu listing
+    menu_list = []
+    for item in menu:
+        item_dict = dict(item)
+        cart_item = next((c for c in cart if c["id"] == item["id"]), None)
+        item_dict["quantity"] = cart_item["qty"] if cart_item else 0
+        menu_list.append(item_dict)
+
+    order_number = get_next_order_number()
+    subtotal, taxes, total = _cart_summary(cart)
+    
+    return render_template("staff_menu.html", menu=menu_list, cart=cart, order_number=order_number, subtotal=subtotal, taxes=taxes, total=total)
+
 @app.route("/staff")
 @staff_required
 def staff_dashboard():
     menu_items = get_menu_items()
     return render_template("staff_dashboard.html", menu_items=menu_items)
+
+@app.route("/staff/table_list")
+@staff_required
+def table_list():
+    tables = get_tables()
+    return render_template("table_list.html", tables=tables)
+
+@app.route("/staff/clear_table", methods=["POST"])
+@staff_required
+def clear_table():
+    table_id = request.form.get("table_id")
+    if table_id:
+        try:
+            update_table_status(table_id, "available")
+            flash("Table marked as available.", "success")
+        except Exception as e:
+            flash(f"Error clearing table: {str(e)}", "error")
+    else:
+        flash("No table specified.", "error")
+    return redirect(url_for("table_list"))
 
 @app.route("/staff/add_item", methods=["POST"])
 @staff_required
