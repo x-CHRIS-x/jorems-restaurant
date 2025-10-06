@@ -182,6 +182,36 @@
 
         .quantity-btn { vertical-align: middle; }
 
+        .order-btn {
+            display: inline-block;
+            padding: 0.9em 2em;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            font-weight: 500;
+            color: #000;
+            background-color: #fff;
+            border: none;
+            border-radius: 45px;
+            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        /* Hover effect (green for confirmation) */
+        .order-btn:hover {
+            background-color: #27ae60;
+            box-shadow: 0px 15px 20px rgba(39, 174, 96, 0.4);
+            color: #fff;
+            transform: translateY(-7px);
+        }
+
+        .order-btn:active {
+            transform: translateY(-1px);
+        }
+        
         /* Layout */
         .page-container { display: flex; gap: 20px; align-items: flex-start; padding: 0 20px; }
         .menu-section { flex: 1 1 70%; }
@@ -199,8 +229,11 @@
         .trash-btn img { width: 18px; height: 18px; }
         .cart-footer { margin-top: auto; padding: 15px; border-top: 1px solid #eee; text-align: left; }
         .totals-row { display: flex; justify-content: space-between; margin: 15px 0; }
-        .order-btn { width: 93%; background: #28a745; border: none; color: #fff; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .order-btn:hover { background: #218838; }
+        .totals-section { margin-bottom: 15px; }
+        .order-section { display: flex; justify-content: flex-end; }
+        .order-section form { margin: 0; width: 100%; }
+        .order-section .order-btn { width: 100%; }
+
     </style>
 </head>
 <body>
@@ -308,16 +341,20 @@
                 {% endif %}
             </div>
             <div class="cart-footer">
-                <div class="totals-row"><span>Subtotal</span><span>₱ {{ '%.2f'|format(subtotal) }}</span></div>
-                <div class="totals-row"><span>Taxes</span><span>₱ {{ '%.2f'|format(taxes) }}</span></div>
-                <div class="totals-row" style="font-weight:bold;"><span>Total</span><span>₱ {{ '%.2f'|format(total) }}</span></div>
-                {% if session.logged_in %}
-                <form action="{{ url_for('checkout_confirm') }}" method="post">
-                    <button type="submit" class="order-btn">Order</button>
-                </form>
-                {% else %}
-                <a href="{{ url_for('login') }}" class="order-btn" style="display:inline-block; text-align:center; text-decoration:none;">Login to Order</a>
-                {% endif %}
+                <div class="totals-section">
+                    <div class="totals-row"><span>Subtotal</span><span>₱ {{ '%.2f'|format(subtotal) }}</span></div>
+                    <div class="totals-row"><span>Taxes</span><span>₱ {{ '%.2f'|format(taxes) }}</span></div>
+                    <div class="totals-row" style="font-weight:bold;"><span>Total</span><span>₱ {{ '%.2f'|format(total) }}</span></div>
+                </div>
+                <div class="order-section">
+                    {% if session.logged_in %}
+                    <form action="{{ url_for('checkout_confirm') }}" method="post">
+                        <button type="submit" class="order-btn">Order</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="order-btn" style="display:inline-block; text-align:center; text-decoration:none;">Login to Order</a>
+                    {% endif %}
+                </div>
             </div>
         </aside>
     </div>
