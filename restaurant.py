@@ -9,13 +9,15 @@ import io
 import json
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+import qrcode
+
 
 UPLOAD_FOLDER = 'static/images'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app = Flask(__name__)
 app.secret_key = "legaspixyz"
-    # Removed teardown_appcontext(close_db) since close_db is not imported
+
 
 def login_required(f):
     @wraps(f)
