@@ -1,5 +1,4 @@
 import sqlite3
-from contextlib import contextmanager
 
 DATABASE = "database/database.db"
 
@@ -12,6 +11,40 @@ def init_tables():
     conn = get_connection()
     cursor = conn.cursor()
     
+    # Create users table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            is_staff INTEGER DEFAULT 0
+        )
+    """)
+
+    # Create menu_items table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS menu_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            price REAL NOT NULL,
+            image TEXT,
+            description TEXT
+        )
+    """)
+
+    # Create orders table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            items TEXT,
+            total REAL,
+            status TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+
     # Create tables table if it doesn't exist
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tables (

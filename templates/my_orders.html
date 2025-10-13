@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Orders - Jorem's Restaurant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #f39c12;
+            overflow: hidden;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        .navbar a {
+            float: left;
+            display: block;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+        .navbar a:hover {
+            background-color: #e67e22;
+        }
+        .navbar .brand {
+            float: left;
+            margin-top: 3px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .navbar-right {
+            float: right;
+            margin-right: 20px;
+        }
+        .container {
+            padding: 20px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 15px;
+            background: #f7f7f7;
+            border-bottom: 1px solid #eee;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .card-body {
+            padding: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .order-items ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .order-items em {
+            color: #555;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a class="brand" href="/">Jorem's Restaurant</a>
+        <div class="navbar-right">
+            <a href="{{ url_for('my_orders') }}">My Orders</a>
+            <a href="{{ url_for('cart') }}">Cart</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2>My Order History</h2>
+            </div>
+            <div class="card-body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>{{ order.created_at.split(' ')[0] }}</td>
+                            <td class="order-items">
+                                <ul>
+                                {% for item in order['items'] %}
+                                    <li>{{ item.name }} x{{ item.qty }}</li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>₱{{ "%.2f"|format(order.total) }}</td>
+                            <td>{{ order.status | capitalize }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5">You have no past orders.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

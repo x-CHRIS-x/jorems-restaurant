@@ -84,19 +84,16 @@
         .alert-success { color: #0f5132; background-color: #d1e7dd; border-color: #badbcc; }
         .alert-danger { color: #842029; background-color: #f8d7da; border-color: #f5c2c7; }
     </style>
-</head>
+</head> 
 <body>
     <div class="navbar">
-        <a class="brand" href="/"> Jorem's Restaurant</a>
+        <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
         <div class="navbar-right">
+            <a href="{{ url_for('staff_dashboard') }}">Menu Management</a>
             <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
             <a href="{{ url_for('table_list') }}">Tables</a>
-            {% if session.logged_in %}
-                {% if session.is_staff %}<a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>{% endif %}
-                <a href="{{ url_for('logout') }}">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-            {% endif %}
+            <a href="{{ url_for('staff_orders') }}">Orders</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
         </div>
     </div>
 
@@ -118,6 +115,10 @@
                     <div class="form-group mb-2">
                         <label for="price">Price</label>
                         <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="description">Description (Optional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                     </div>
                     <div class="form-group mb-3">
                         <label for="image">Image</label>

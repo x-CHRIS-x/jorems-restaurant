@@ -3,6 +3,13 @@
 <head>
     <title>Jorem's Restaurant Menu</title>
     <style>
+        .modal-body .modal-img {
+            max-height: 300px; /* Adjust image height */
+            object-fit: cover;
+            width: 100%;
+            border-radius: .5rem;
+        }
+
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -235,16 +242,18 @@
         .order-section .order-btn { width: 100%; }
 
     </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
 <body>
     <div class="navbar">
-        <a class="brand" href="/"> Jorem's Restaurant</a>
+        <a class="brand" href="/">Jorem's Restaurant</a>
         <div class="navbar-right">
             {% if session.logged_in %}
                 {% if session.is_staff %}
                     <a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>
                     <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
                 {% else %}
+                    <a href="{{ url_for('my_orders') }}">My Orders</a>
                     <a href="{{ url_for('cart') }}">Cart</a>
                 {% endif %}
                 <a href="{{ url_for('logout') }}">Logout</a>
@@ -267,28 +276,71 @@
                 {% endif %}
             {% endwith %}
 
-            <div class="menu-grid">
-                {% for item in menu %}
-                <div class="menu-card">
-                    <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
-                    <div class="title">{{ item.name | safe }}</div>
-                    <div class="price">₱ {{ '%.2f'|format(item.price) }}</div>
-                    <div class="controls">
-                        <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
-                            <input type="hidden" name="item_id" value="{{ item.id }}">
-                            <input type="hidden" name="change" value="-1">
-                            <button type="submit" class="quantity-btn">-</button>
-                        </form>
-                        <span class="quantity-display">{{ item.quantity }}</span>
-                        <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
-                            <input type="hidden" name="item_id" value="{{ item.id }}">
-                            <input type="hidden" name="change" value="1">
-                            <button type="submit" class="quantity-btn">+</button>
-                        </form>
+            <form action="{{ url_for('add_item') }}" method="post" id="menu-form">
+                <div class="menu-grid">
+                    {% for item in menu %}
+                    <div class="menu-card" id="item-{{ item.id }}" data-price="{{ item.price }}">
+                        <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}" data-bs-toggle="modal" data-bs-target="#menuItemModal-{{ item.id }}" style="cursor: pointer;">
+                        <div class="title">{{ item.name | safe }}</div>
+                        <div class="price">₱ {{ '%.2f'|format(item.price) }}</div>
+                        <div class="controls">
+                            <button type="button" class="quantity-btn btn-decrease" data-item-id="{{ item.id }}">-</button>
+                            <span class="quantity-display" id="quantity-{{ item.id }}">{{ item.quantity }}</span>
+                            <button type="button" class="quantity-btn btn-increase" data-item-id="{{ item.id }}">+</button>
+                        </div>
+                        <input type="hidden" name="item_qty_{{ item.id }}" id="input-quantity-{{ item.id }}" value="{{ item.quantity }}">
+                        <input type="hidden" name="item_name_{{ item.id }}" value="{{ item.name }}">
+                        <input type="hidden" name="item_price_{{ item.id }}" value="{{ item.price }}">
+                        <input type="hidden" name="item_image_{{ item.id }}" value="{{ item.image }}">
+                    </div>
+
+                <!-- Modal for {{ item.name }} -->
+                <div class="modal fade" id="menuItemModal-{{ item.id }}" tabindex="-1" aria-labelledby="menuItemModalLabel-{{ item.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="menuItemModalLabel-{{ item.id }}">{{ item.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{ url_for('add_single_item') }}" method="post" id="form-{{ item.id }}">
+                                    <img src="{{ url_for('static', filename=item.image) }}" class="modal-img mb-3" alt="{{ item.name }}">
+                                    
+                                    <h5 class="text-start fw-bold">Description</h5>
+                                    <div class="modal-description">
+                                        <p class="text-start">
+                                            {{ item.description or "No description available for this delicious item yet, but we're sure you'll love it!" }}
+                                        </p>
+                                    </div>
+
+                                    <div class="d-flex justify-content-center align-items-center my-3">
+                                        <label class="me-3">Quantity:</label>
+                                        <button type="button" class="quantity-btn modal-quantity-btn" data-change="-1">-</button>
+                                        <input type="number" class="quantity-display modal-quantity-input" name="quantity" value="1" min="1" style="width: 60px; text-align: center;">
+                                        <button type="button" class="quantity-btn modal-quantity-btn" data-change="1">+</button>
+                                    </div>
+
+                                    <div class="form-group text-start mt-3">
+                                        <label for="request-{{ item.id }}">Special Request (e.g., "no onions")</label>
+                                        <textarea class="form-control" id="request-{{ item.id }}" name="request" rows="2"></textarea>
+                                    </div>
+                                    
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" form="form-{{ item.id }}" class="btn btn-primary">Add to Order</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
-            </div>
+                </div>
+                <div class="action-container" style="background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); position: sticky; bottom: 0; z-index: 999;">
+                    <h3 style="margin: 0;">Total: ₱<span id="total-price">0.00</span></h3>
+                    <button type="submit" class="order-btn">Add to Order</button>
+                </div>
+            </form>
 
             <div class="action-container">
                 <form action="/budget_mode" method="post">
@@ -313,13 +365,13 @@
                         <div class="cart-item-info">
                             <div class="cart-item-name">{{ item.name }}</div>
                             <div class="cart-item-price">₱ {{ '%.2f'|format(item.price) }}</div>
+                            {% if item.request %}<div class="cart-item-request"><em>Note: {{ item.request }}</em></div>{% endif %}
                             <div class="cart-qty-controls">
                                 <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
                                     <input type="hidden" name="item_id" value="{{ item.id }}">
                                     <input type="hidden" name="change" value="-1">
                                     <button type="submit" class="quantity-btn">-</button>
                                 </form>
-                                <span class="quantity-display">{{ item.qty }}</span>
                                 <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
                                     <input type="hidden" name="item_id" value="{{ item.id }}">
                                     <input type="hidden" name="change" value="1">
@@ -358,5 +410,65 @@
             </div>
         </aside>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuForm = document.getElementById('menu-form');
+            const totalPriceEl = document.getElementById('total-price');
+
+            function updateTotal() {
+                let total = 0;
+                document.querySelectorAll('.menu-card').forEach(card => {
+                    const price = parseFloat(card.dataset.price);
+                    const quantity = parseInt(card.querySelector('.quantity-display').textContent);
+                    total += price * quantity;
+                });
+                totalPriceEl.textContent = total.toFixed(2);
+            }
+
+            menuForm.addEventListener('click', function(e) {
+                const target = e.target;
+                const isIncrease = target.classList.contains('btn-increase');
+                const isDecrease = target.classList.contains('btn-decrease');
+
+                if (isIncrease || isDecrease) {
+                    const itemId = target.dataset.itemId;
+                    const quantityEl = document.getElementById(`quantity-${itemId}`);
+                    const inputEl = document.getElementById(`input-quantity-${itemId}`);
+                    let currentQuantity = parseInt(quantityEl.textContent);
+
+                    if (isIncrease) currentQuantity++;
+                    if (isDecrease && currentQuantity > 0) currentQuantity--;
+
+                    quantityEl.textContent = currentQuantity;
+                    inputEl.value = currentQuantity;
+                    updateTotal();
+                }
+            });
+
+            // Sync modal quantity with main page quantity
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('show.bs.modal', function (event) {
+                    const itemId = modal.id.split('-')[1];
+                    const mainQuantityEl = document.getElementById(`quantity-${itemId}`);
+                    const modalInput = modal.querySelector('.modal-quantity-input');
+                    let quantity = parseInt(mainQuantityEl.textContent) || 1;
+                    modalInput.value = quantity;
+                });
+            });
+
+            // Handle quantity changes inside the modal
+            document.querySelectorAll('.modal-quantity-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const change = parseInt(this.dataset.change);
+                    const input = this.parentElement.querySelector('.modal-quantity-input');
+                    let currentValue = parseInt(input.value);
+                    if (currentValue + change >= 1) input.value = currentValue + change;
+                });
+            });
+
+            updateTotal(); // Initial calculation on page load
+        });
+    </script>
 </body>
 </html>

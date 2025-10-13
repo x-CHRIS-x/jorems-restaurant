@@ -85,6 +85,8 @@
         input[type="text"],
         input[type="number"],
         input[type="file"] {
+        input[type="file"], 
+        textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -92,6 +94,7 @@
             font-size: 16px;
             margin-bottom: 10px;
             box-sizing: border-box;
+        }
         }
 
         input[type="file"] {
@@ -171,9 +174,10 @@
     <div class="navbar">
         <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
         <div class="navbar-right">
+            <a href="{{ url_for('staff_dashboard') }}">Menu Management</a>
             <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
             <a href="{{ url_for('table_list') }}">Tables</a>
-            <a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>
+            <a href="{{ url_for('staff_orders') }}">Orders</a>
             <a href="{{ url_for('logout') }}">Logout</a>
         </div>
     </div>
@@ -197,6 +201,10 @@
                 <div class="form-group">
                     <label for="price">Price</label>
                     <input type="number" step="0.01" id="price" name="price" value="{{ item.price }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="4">{{ item.description or '' }}</textarea>
                 </div>
                 <div class="form-group">
                     <label>Current Image</label>

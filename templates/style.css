@@ -1,0 +1,14 @@
+body {
+    padding-top: 56px; /* Adjust for fixed navbar */
+}
+
+.menu-item-card img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.modal-description {
+    min-height: 100px; /* Ensures a minimum space for description */
+    max-height: 150px; /* Limits the maximum height */
+    overflow-y: auto;  /* Adds a scrollbar if content overflows */
+}

@@ -30,6 +30,14 @@ def get_user_by_username(username):
     conn.close()
     return user
 
+def get_user_by_id(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
 def update_user_password(user_id, new_password):
     conn = get_connection()
     cursor = conn.cursor()
@@ -47,12 +55,12 @@ def delete_user(user_id):
 
 
 # MENU ITEMS CRUD
-def create_menu_item(name, price, image):
+def create_menu_item(name, price, image, description=""):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO menu_items (name, price, image) VALUES (?, ?, ?)",
-        (name, price, image)
+        "INSERT INTO menu_items (name, price, image, description) VALUES (?, ?, ?, ?)",
+        (name, price, image, description)
     )
     conn.commit()
     conn.close()
@@ -73,12 +81,12 @@ def get_menu_item_by_id(item_id):
     conn.close()
     return item
 
-def update_menu_item(item_id, name, price, image):
+def update_menu_item(item_id, name, price, image, description=""):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE menu_items SET name = ?, price = ?, image = ? WHERE id = ?",
-        (name, price, image, item_id)
+        "UPDATE menu_items SET name = ?, price = ?, image = ?, description = ? WHERE id = ?",
+        (name, price, image, description, item_id)
     )
     conn.commit()
     conn.close()
@@ -107,7 +115,15 @@ def create_order(user_id, items, total, status="pending"):
 def get_orders():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM orders")
+    cursor.execute("SELECT * FROM orders ORDER BY id DESC")
+    orders = cursor.fetchall()
+    conn.close()
+    return orders
+
+def get_orders_by_user(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
     orders = cursor.fetchall()
     conn.close()
     return orders

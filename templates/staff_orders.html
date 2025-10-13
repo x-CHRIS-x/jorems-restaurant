@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer Orders</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #f39c12;
+            overflow: hidden;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        .navbar a {
+            float: left;
+            display: block;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+        .navbar a:hover {
+            background-color: #e67e22;
+        }
+        .navbar .brand {
+            float: left;
+            margin-top: 3px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .navbar-right {
+            float: right;
+            margin-right: 20px;
+        }
+        .container {
+            padding: 20px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 15px;
+            background: #f7f7f7;
+            border-bottom: 1px solid #eee;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .card-body {
+            padding: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .order-items ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .order-items em {
+            color: #555;
+            font-size: 0.9em;
+        }
+        .status-form select, .status-form button {
+            padding: 5px 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .status-form button {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
+        <div class="navbar-right">
+            <a href="{{ url_for('staff_dashboard') }}">Menu Management</a>
+            <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
+            <a href="{{ url_for('table_list') }}">Tables</a>
+            <a href="{{ url_for('staff_orders') }}">Orders</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="padding: 0 20px;">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <div class="card">
+            <div class="card-header">
+                <h2>Customer Orders</h2>
+            </div>
+            <div class="card-body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.id }}</td>
+                            <td>{{ order.username }}</td>
+                            <td class="order-items">
+                                <ul>
+                                {% for item in order['items'] %}
+                                    <li>
+                                        {{ item.name }} x{{ item.qty }}
+                                        {% if item.request %}
+                                            <br><em>Note: {{ item.request }}</em>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>₱{{ "%.2f"|format(order.total) }}</td>
+                            <td>{{ order.status | capitalize }}</td>
+                            <td>
+                                <form class="status-form" action="{{ url_for('update_order_status') }}" method="post">
+                                    <input type="hidden" name="order_id" value="{{ order.id }}">
+                                    <select name="status">
+                                        <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>Preparing</option>
+                                        <option value="ready" {% if order.status == 'ready' %}selected{% endif %}>Ready</option>
+                                        <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Completed</option>
+                                        <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                    <button type="submit">Update</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6">No orders found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
