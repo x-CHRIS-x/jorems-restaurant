@@ -4,7 +4,7 @@
     <title>Jorem's Restaurant Menu</title>
     <style>
         .modal-body .modal-img {
-            max-height: 300px; /* Adjust image height */
+            max-height: 300px;
             object-fit: cover;
             width: 100%;
             border-radius: .5rem;
@@ -16,17 +16,35 @@
             background-color: #f8f8f8;
             margin: 0;
             padding: 0;
-            padding-bottom: 50px; /* Add padding to bottom to prevent content being hidden */
+            padding-bottom: 50px;
         }
 
         h1, h3 {
             margin: 15px 0;
         }
 
-        /* Grid menu */
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }
-        .menu-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 12px; text-align: left; display: flex; flex-direction: column; height: 100%; }
-        .menu-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .menu-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 12px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .menu-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
         .menu-card .title { margin: 10px 0 4px; font-weight: 700; }
         .menu-card .price { color: #555; margin-bottom: 10px; }
         .menu-card .controls { margin-top: auto; display: inline-flex; align-items: center; gap: 8px; }
@@ -36,6 +54,7 @@
         input[type="number"] {
             width: 60px;
             padding: 5px;
+            text-align: center;
         }
 
         td img {
@@ -55,16 +74,11 @@
             cursor: pointer;
             font-weight: bold;
             color: white;
-           
         }
 
-        button:hover {
-            background-color: #d68910;
-        }
+        button:hover { background-color: #d68910; }
 
-        form {
-            margin-bottom: 20px;
-        }
+        form { margin-bottom: 20px; }
 
         a {
             text-decoration: none;
@@ -72,9 +86,7 @@
             font-weight: bold;
         }
 
-        a:hover {
-            color: #d68910;
-        }
+        a:hover { color: #d68910; }
 
         .navbar {
             background-color: #f39c12;
@@ -95,31 +107,17 @@
             padding: 14px 20px;
             text-decoration: none;
         }
-        .navbar a:hover {
-            background-color: #e67e22;
-        }
-        .navbar .brand {
-            float: left;
-            margin-top: 3px;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        .navbar-right {
-            float: right;
-            margin-right: 20px;
-        }
+        .navbar a:hover { background-color: #e67e22; }
+        .navbar .brand { float: left; margin-top: 3px; font-size: 20px; font-weight: bold; }
+        .navbar-right { float: right; margin-right: 20px; }
 
         .action-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px; /* Adds space between items */
+            gap: 20px;
             margin-top: 20px;
             padding-bottom: 20px;
-        }
-
-        .action-container form {
-            margin-bottom: 0; /* Override default form margin */
         }
 
         .flash-success {
@@ -132,9 +130,6 @@
             border-color: #c3e6cb;
             width: 80%;
         }
-
-        .add-to-cart-form { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .add-to-cart-form form { margin: 0; }
 
         .quantity-controls {
             display: flex;
@@ -159,29 +154,34 @@
             font-size: 16px;
         }
 
-        .quantity-btn:hover {
-            background-color: #cfcfcf;
-        }
+        .quantity-btn:hover { background-color: #cfcfcf; }
 
         .quantity-display {
             min-width: 44px;
             height: 32px;
             line-height: 32px;
             box-sizing: border-box;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-weight: 700;
-            padding: 0 8px;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
             background: #fff;
             color: #333;
-            vertical-align: middle;
         }
 
-        .quantity-btn { vertical-align: middle; }
+        .update-btn {
+            padding: 6px 12px;
+            margin: 0;
+            background-color: #28a745;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .update-btn:hover {
+            background-color: #218838;
+        }
 
         .order-btn {
             display: inline-block;
@@ -201,7 +201,6 @@
             text-decoration: none;
         }
 
-        /* Hover effect (green for confirmation) */
         .order-btn:hover {
             background-color: #27ae60;
             box-shadow: 0px 15px 20px rgba(39, 174, 96, 0.4);
@@ -209,14 +208,21 @@
             transform: translateY(-7px);
         }
 
-        .order-btn:active {
-            transform: translateY(-1px);
-        }
-        
-        /* Layout */
+        .order-btn:active { transform: translateY(-1px); }
+
         .page-container { display: flex; gap: 20px; align-items: flex-start; padding: 0 20px; }
         .menu-section { flex: 1 1 70%; }
-        .cart-sidebar { flex: 0 0 20%; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 70px; height: calc(100vh - 90px); display: flex; flex-direction: column; }
+        .cart-sidebar {
+            flex: 0 0 20%;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 70px;
+            height: calc(100vh - 90px);
+            display: flex;
+            flex-direction: column;
+        }
         .cart-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .cart-items { overflow-y: auto; padding: 10px 15px; }
         .cart-item { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f1f1; }
@@ -225,7 +231,6 @@
         .cart-item-name { font-weight: bold; }
         .cart-item-price { color: #666; font-size: 12px; }
         .cart-qty-controls { display: inline-flex; align-items: center; gap: 6px; }
-        .cart-qty-controls form { margin: 0; }
         .trash-btn { background: transparent; border: none; cursor: pointer; }
         .trash-btn img { width: 18px; height: 18px; }
         .cart-footer { margin-top: auto; padding: 15px; border-top: 1px solid #eee; text-align: left; }
@@ -236,7 +241,7 @@
         .order-section .order-btn { width: 100%; }
 
     </style>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="navbar">
@@ -277,67 +282,57 @@
                         <div class="title">{{ item.name | safe }}</div>
                         <div class="price">₱ {{ '%.2f'|format(item.price) }}</div>
                         <div class="controls">
-                            <button type="button" class="quantity-btn btn-decrease" data-item-id="{{ item.id }}">-</button>
-                            <span class="quantity-display" id="quantity-{{ item.id }}">{{ item.quantity }}</span>
-                            <button type="button" class="quantity-btn btn-increase" data-item-id="{{ item.id }}">+</button>
+                            <form action="{{ url_for('update_cart') }}" method="post" class="quantity-form" style="display: inline-flex; gap: 8px; align-items: center;">
+                                <input type="hidden" name="item_id" value="{{ item.id }}">
+                                <button type="submit" name="change" value="-1" class="quantity-btn">-</button>
+                                <input type="number" class="quantity-display auto-submit" name="direct_quantity" 
+                                       value="{{ item.quantity }}" min="0" style="width: 60px; text-align: center;">
+                                <button type="submit" name="change" value="1" class="quantity-btn">+</button>
+                            </form>
                         </div>
-                        <input type="hidden" name="item_qty_{{ item.id }}" id="input-quantity-{{ item.id }}" value="{{ item.quantity }}">
-                        <input type="hidden" name="item_name_{{ item.id }}" value="{{ item.name }}">
-                        <input type="hidden" name="item_price_{{ item.id }}" value="{{ item.price }}">
-                        <input type="hidden" name="item_image_{{ item.id }}" value="{{ item.image }}">
                     </div>
 
-                <!-- Modal for {{ item.name }} -->
-                <div class="modal fade" id="menuItemModal-{{ item.id }}" tabindex="-1" aria-labelledby="menuItemModalLabel-{{ item.id }}" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="menuItemModalLabel-{{ item.id }}">{{ item.name }}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <form action="{{ url_for('add_single_item') }}" method="post" id="form-{{ item.id }}">
-                                    <img src="{{ url_for('static', filename=item.image) }}" class="modal-img mb-3" alt="{{ item.name }}">
-                                    
-                                    <h5 class="text-start fw-bold">Description</h5>
-                                    <div class="modal-description">
-                                        <p class="text-start">
-                                            {{ item.description or "No description available for this delicious item yet, but we're sure you'll love it!" }}
-                                        </p>
-                                    </div>
+                    <!-- Modal -->
+                    <div class="modal fade" id="menuItemModal-{{ item.id }}" tabindex="-1" aria-labelledby="menuItemModalLabel-{{ item.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="menuItemModalLabel-{{ item.id }}">{{ item.name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form action="{{ url_for('update_cart') }}" method="post" id="form-{{ item.id }}">
+                                        <img src="{{ url_for('static', filename=item.image) }}" class="modal-img mb-3" alt="{{ item.name }}">
+                                        <h5 class="text-start fw-bold">Description</h5>
+                                        <p class="text-start">{{ item.description or "No description available for this delicious item yet, but we're sure you'll love it!" }}</p>
 
-                                    <div class="d-flex justify-content-center align-items-center my-3">
-                                        <label class="me-3">Quantity:</label>
-                                        <button type="button" class="quantity-btn modal-quantity-btn" data-change="-1">-</button>
-                                        <input type="number" class="quantity-display modal-quantity-input" name="quantity" value="1" min="1" style="width: 60px; text-align: center;">
-                                        <button type="button" class="quantity-btn modal-quantity-btn" data-change="1">+</button>
-                                    </div>
+                                        <div class="d-flex justify-content-center align-items-center my-3">
+                                            <label class="me-3">Quantity:</label>
+                                            <button type="button" class="quantity-btn modal-quantity-btn" data-change="-1">-</button>
+                                            <input type="number" class="quantity-display modal-quantity-input" name="direct_quantity" value="1" min="1" style="width:60px;">
+                                            <button type="button" class="quantity-btn modal-quantity-btn" data-change="1">+</button>
+                                        </div>
 
-                                    <div class="form-group text-start mt-3">
-                                        <label for="request-{{ item.id }}">Special Request (e.g., "no onions")</label>
-                                        <textarea class="form-control" id="request-{{ item.id }}" name="request" rows="2"></textarea>
-                                    </div>
-                                    
-                                    <input type="hidden" name="item_id" value="{{ item.id }}">
-                                </form>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="submit" form="form-{{ item.id }}" class="btn btn-primary">Add to Order</button>
+                                        <div class="form-group text-start mt-3">
+                                            <label for="request-{{ item.id }}">Special Request</label>
+                                            <textarea class="form-control" id="request-{{ item.id }}" name="request" rows="2"></textarea>
+                                        </div>
+                                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" form="form-{{ item.id }}" class="btn btn-primary">Add to Order</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                {% endfor %}
-                </div>
-                <div class="action-container" style="background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); position: sticky; bottom: 0; z-index: 999;">
-                    <h3 style="margin: 0;">Total: ₱<span id="total-price">0.00</span></h3>
-                    <button type="submit" class="order-btn">Add to Order</button>
+                    {% endfor %}
                 </div>
             </form>
 
             <div class="action-container">
                 <form action="/budget_mode" method="post">
-                    <label>Enter your budget: 
+                    <label>Enter your budget:
                         <input type="number" name="budget_value" required>
                     </label>
                     <button type="submit">Try Budget Mode</button>
@@ -358,17 +353,14 @@
                         <div class="cart-item-info">
                             <div class="cart-item-name">{{ item.name }}</div>
                             <div class="cart-item-price">₱ {{ '%.2f'|format(item.price) }}</div>
-                            {% if item.request %}<div class="cart-item-request"><em>Note: {{ item.request }}</em></div>{% endif %}
+                            {% if item.request %}<div><em>Note: {{ item.request }}</em></div>{% endif %}
                             <div class="cart-qty-controls">
-                                <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
+                                <form action="{{ url_for('update_cart') }}" method="post" class="quantity-form" style="display: inline-flex; gap: 8px; align-items: center;">
                                     <input type="hidden" name="item_id" value="{{ item.id }}">
-                                    <input type="hidden" name="change" value="-1">
-                                    <button type="submit" class="quantity-btn">-</button>
-                                </form>
-                                <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
-                                    <input type="hidden" name="item_id" value="{{ item.id }}">
-                                    <input type="hidden" name="change" value="1">
-                                    <button type="submit" class="quantity-btn">+</button>
+                                    <button type="submit" name="change" value="-1" class="quantity-btn">-</button>
+                                    <input type="number" class="quantity-display auto-submit" name="direct_quantity" 
+                                           value="{{ item.qty }}" min="0" style="width: 60px; text-align: center;">
+                                    <button type="submit" name="change" value="1" class="quantity-btn">+</button>
                                 </form>
                                 <form action="{{ url_for('remove_item') }}" method="post" style="display:inline; margin-left:8px;">
                                     <input type="hidden" name="item_name" value="{{ item.name }}">
@@ -397,71 +389,65 @@
                         <button type="submit" class="order-btn">Order</button>
                     </form>
                     {% else %}
-                    <a href="{{ url_for('login') }}" class="order-btn" style="display:inline-block; text-align:center; text-decoration:none;">Login to Order</a>
+                    <a href="{{ url_for('login') }}" class="order-btn">Login to Order</a>
                     {% endif %}
                 </div>
             </div>
         </aside>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const menuForm = document.getElementById('menu-form');
-            const totalPriceEl = document.getElementById('total-price');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-submit functionality for quantity inputs
+        document.querySelectorAll('.auto-submit').forEach(input => {
+            // Submit on blur (when input loses focus)
+            input.addEventListener('blur', function() {
+                let value = parseInt(this.value);
+                if (isNaN(value)) value = 0;
+                if (value < 0) value = 0;
+                this.value = value;
+                
+                // Add hidden input for manual update
+                const updateInput = document.createElement('input');
+                updateInput.type = 'hidden';
+                updateInput.name = 'update_type';
+                updateInput.value = 'manual';
+                this.form.appendChild(updateInput);
+                
+                this.form.submit();
+            });
 
-            function updateTotal() {
-                let total = 0;
-                document.querySelectorAll('.menu-card').forEach(card => {
-                    const price = parseFloat(card.dataset.price);
-                    const quantity = parseInt(card.querySelector('.quantity-display').textContent);
-                    total += price * quantity;
-                });
-                totalPriceEl.textContent = total.toFixed(2);
-            }
-
-            menuForm.addEventListener('click', function(e) {
-                const target = e.target;
-                const isIncrease = target.classList.contains('btn-increase');
-                const isDecrease = target.classList.contains('btn-decrease');
-
-                if (isIncrease || isDecrease) {
-                    const itemId = target.dataset.itemId;
-                    const quantityEl = document.getElementById(`quantity-${itemId}`);
-                    const inputEl = document.getElementById(`input-quantity-${itemId}`);
-                    let currentQuantity = parseInt(quantityEl.textContent);
-
-                    if (isIncrease) currentQuantity++;
-                    if (isDecrease && currentQuantity > 0) currentQuantity--;
-
-                    quantityEl.textContent = currentQuantity;
-                    inputEl.value = currentQuantity;
-                    updateTotal();
+            // Submit on Enter key
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.blur();
                 }
             });
-
-            // Sync modal quantity with main page quantity
-            document.querySelectorAll('.modal').forEach(modal => {
-                modal.addEventListener('show.bs.modal', function (event) {
-                    const itemId = modal.id.split('-')[1];
-                    const mainQuantityEl = document.getElementById(`quantity-${itemId}`);
-                    const modalInput = modal.querySelector('.modal-quantity-input');
-                    let quantity = parseInt(mainQuantityEl.textContent) || 1;
-                    modalInput.value = quantity;
-                });
-            });
-
-            // Handle quantity changes inside the modal
-            document.querySelectorAll('.modal-quantity-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const change = parseInt(this.dataset.change);
-                    const input = this.parentElement.querySelector('.modal-quantity-input');
-                    let currentValue = parseInt(input.value);
-                    if (currentValue + change >= 1) input.value = currentValue + change;
-                });
-            });
-
-            updateTotal(); // Initial calculation on page load
         });
+
+        document.addEventListener('DOMContentLoaded', function() {
+        // Modal quantity change
+        document.querySelectorAll('.modal-quantity-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const change = parseInt(this.dataset.change);
+                const input = this.parentElement.querySelector('.modal-quantity-input');
+                let currentValue = parseInt(input.value);
+                if (currentValue + change >= 1) input.value = currentValue + change;
+            });
+        });
+
+        // Handle quantity input validation
+        document.querySelectorAll('.quantity-display').forEach(input => {
+            input.addEventListener('input', function() {
+                let value = parseInt(this.value);
+                if (isNaN(value)) value = 0;
+                if (value < 0) value = 0;
+                this.value = value;
+            });
+        });
+    });
     </script>
 </body>
 </html>

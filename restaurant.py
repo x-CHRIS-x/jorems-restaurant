@@ -233,10 +233,11 @@ def add_single_item():
 @app.route("/update_cart", methods=["POST"])
 def update_cart():
     item_id = request.form.get("item_id")
-    change = int(request.form.get("change", 0))
+    change = request.form.get("change")
+    direct_quantity = request.form.get("direct_quantity")
     return_to = request.form.get("return_to")
     
-    if not item_id or change == 0:
+    if not item_id:
         return redirect(url_for("index"))
     
     # Get the menu item details
@@ -258,24 +259,38 @@ def update_cart():
     
     # Find existing item in cart
     for cart_item in cart:
-        # We must match by a consistent key. Since this is a simple +/- update,
-        # we assume it doesn't have a special request.
         cart_item_key = f"{cart_item.get('id')}_{cart_item.get('request', '')}"
         if cart_item_key == f"{item['id']}_":
-            new_qty = cart_item["qty"] + change
-            if new_qty <= 0:
-                # Remove item from cart if quantity becomes 0 or negative
-                cart.remove(cart_item)
-            else:
-                # Update quantity, price, image, and subtotal
-                cart_item["qty"] = new_qty
-                cart_item["price"] = item["price"]
-                cart_item["image"] = item["image"]
-                cart_item["subtotal"] = new_qty * item["price"]
+            if direct_quantity is not None:
+                # Direct quantity update
+                try:
+                    new_qty = int(direct_quantity)
+                    if new_qty <= 0:
+                        cart.remove(cart_item)
+                    else:
+                        cart_item["qty"] = new_qty
+                        cart_item["price"] = item["price"]
+                        cart_item["image"] = item["image"]
+                        cart_item["subtotal"] = new_qty * item["price"]
+                except ValueError:
+                    pass
+            elif change:
+                # Increment/decrement update
+                try:
+                    change_val = int(change)
+                    new_qty = cart_item["qty"] + change_val
+                    if new_qty <= 0:
+                        cart.remove(cart_item)
+                    else:
+                        cart_item["qty"] = new_qty
+                        cart_item["price"] = item["price"]
+                        cart_item["image"] = item["image"]
+                        cart_item["subtotal"] = new_qty * item["price"]
+                except ValueError:
+                    pass
             found = True
             break
     
-    # If item not in cart and we're adding (change > 0)
     if not found and change > 0:
         cart.append({
             "id": item["id"],
