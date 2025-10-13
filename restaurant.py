@@ -18,7 +18,6 @@ app.secret_key = "legaspixyz"
 # Initialize database tables
 init_tables()
 
-
 UPLOAD_FOLDER = 'static/images'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 

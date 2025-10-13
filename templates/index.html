@@ -86,7 +86,6 @@
             box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
             border-radius: 10px;
         }
-
         .navbar a {
             float: left;
             display: block;
@@ -95,21 +94,16 @@
             text-align: center;
             padding: 14px 20px;
             text-decoration: none;
-            transition: 0.3s;
         }
-
         .navbar a:hover {
             background-color: #e67e22;
-            color: #fff;
         }
-
         .navbar .brand {
             float: left;
             margin-top: 3px;
             font-size: 20px;
             font-weight: bold;
         }
-
         .navbar-right {
             float: right;
             margin-right: 20px;
@@ -254,7 +248,6 @@
                     <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
                 {% else %}
                     <a href="{{ url_for('my_orders') }}">My Orders</a>
-                    <a href="{{ url_for('cart') }}">Cart</a>
                 {% endif %}
                 <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
