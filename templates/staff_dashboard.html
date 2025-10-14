@@ -1,13 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Staff Dashboard</title>
+{% extends "navbar.html" %}
+
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block additional_styles %}
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f8f8f8;
-            margin: 0; /* Reset default margin */
-            padding: 0; /* Reset default padding */
+            margin: 0;
+            padding: 0;
         }
         .navbar {
             background-color: #f39c12;
@@ -84,19 +85,9 @@
         .alert-success { color: #0f5132; background-color: #d1e7dd; border-color: #badbcc; }
         .alert-danger { color: #842029; background-color: #f8d7da; border-color: #f5c2c7; }
     </style>
-</head> 
-<body>
-    <div class="navbar">
-        <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
-        <div class="navbar-right">
-            <a href="{{ url_for('staff_dashboard') }}">Menu Management</a>
-            <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
-            <a href="{{ url_for('table_list') }}">Tables</a>
-            <a href="{{ url_for('staff_orders') }}">Orders</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </div>
-    </div>
+{% endblock %}
 
+{% block content %}
     <div class="container page-content">
 
         <h1 class="mb-4">Menu Management</h1>
@@ -153,5 +144,4 @@
             {% endfor %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}

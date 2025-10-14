@@ -62,55 +62,38 @@
 
         /* Status-based row colors */
         .status-pending {
-            background-color: #fff3cd;
-        }
-        .status-preparing {
-            background-color: #cff4fc;
-        }
-        .status-ready {
-            background-color: #d1e7dd;
-        }
-        .status-completed {
-            background-color: #e8e8e8;
-        }
-        .status-cancelled {
-            background-color: #f8d7da;
+        background-color: #FFF8D1;
+        font-weight: bold;
+        color: #8A6D00;
         }
 
-        /* Status text colors */
-        .text-pending {
-            color: #856404;
-            font-weight: bold;
+        .status-preparing {
+        background-color: #FFE5B4;
+        font-weight: bold;
+        color: #8A4B00;
         }
-        .text-preparing {
-            color: #055160;
-            font-weight: bold;
+
+        .status-ready {
+        background-color: #D4EDDA;
+        font-weight: bold;
+        color: #155724;
         }
-        .text-ready {
-            color: #0f5132;
-            font-weight: bold;
+
+        .status-completed {
+        background-color: #D1E7FF;
+        font-weight: bold;
+        color: #004085;
         }
-        .text-completed {
-            color: #495057;
-            font-weight: bold;
-        }
-        .text-cancelled {
-            color: #842029;
-            font-weight: bold;
+
+        .status-cancelled {
+        background-color: #F8D7DA;
+        font-weight: bold;
+        color: #721C24;
         }
     {% endblock %}
 
 {% block content %}
     <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div style="padding: 0 20px;">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
         <div class="card">
             <div class="card-header">
                 <h2>Customer Orders</h2>
@@ -150,11 +133,16 @@
                                 <form class="status-form" action="{{ url_for('update_order_status') }}" method="post">
                                     <input type="hidden" name="order_id" value="{{ order.id }}">
                                     <select name="status">
-                                        <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
-                                        <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>Preparing</option>
-                                        <option value="ready" {% if order.status == 'ready' %}selected{% endif %}>Ready</option>
-                                        <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Completed</option>
-                                        <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                        {% set status_options = [
+                                            ('pending', 'Pending'),
+                                            ('preparing', 'Preparing'),
+                                            ('ready', 'Ready'),
+                                            ('completed', 'Completed'),
+                                            ('cancelled', 'Cancelled')
+                                        ] %}
+                                        {% for value, label in status_options %}
+                                            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
                                     </select>
                                     <button type="submit">Update</button>
                                 </form>

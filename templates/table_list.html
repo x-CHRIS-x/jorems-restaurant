@@ -1,7 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Table List - Jorem's Restaurant</title>
+{% extends "navbar.html" %}
+
+{% block title %}Table List - Jorem's Restaurant{% endblock %}
+
+{% block additional_styles %}
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -148,18 +149,9 @@
             color: #721c24;
         }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
-        <div class="navbar-right">
-            <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
-            <a href="{{ url_for('table_list') }}">Tables</a>
-            <a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </div>
-    </div>
+{% endblock %}
 
+{% block content %}
     <div class="container">
         <h1>Table Management</h1>
         
@@ -191,5 +183,4 @@
             {% endfor %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}

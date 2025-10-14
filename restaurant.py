@@ -872,6 +872,15 @@ def staff_delete_item(item_id):
 def staff_orders():
     orders_data = get_orders()
     orders = []
+    # Define status priority
+    status_priority = {
+        'pending': 1,
+        'preparing': 2,
+        'ready': 3,
+        'completed': 4,
+        'cancelled': 5
+    }
+    
     for order_row in orders_data:
         order = dict(order_row)
         user = get_user_by_id(order['user_id'])
@@ -885,7 +894,12 @@ def staff_orders():
             order['items'] = loaded_items
         except (json.JSONDecodeError, TypeError):
             order['items'] = [] # Handle cases where items might be malformed
+        # Add priority number for sorting
+        order['priority'] = status_priority.get(order['status'], 999)
         orders.append(order)
+    
+    # Sort orders by priority first, then by ID
+    orders.sort(key=lambda x: (x['priority'], x['id']))
     
     return render_template("staff_orders.html", orders=orders)
 

@@ -1,7 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Table Management - Jorem's Restaurant</title>
+{% extends "navbar.html" %}
+
+{% block title %}Table Management - Jorem's Restaurant{% endblock %}
+
+{% block additional_styles %}
     <style>
         /* Reuse all styles from staff_menu.html */
         body {
@@ -188,18 +189,9 @@
             color: #721c24;
         }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
-        <div class="navbar-right">
-            <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
-            <a href="{{ url_for('table_list') }}">Tables</a>
-            <a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </div>
-    </div>
+{% endblock %}
 
+{% block content %}
     <div class="page-container">
         <div class="menu-section">
             <h1>Table Management</h1>
@@ -308,5 +300,33 @@
             }
         }
     </script>
-</body>
-</html>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        function selectTable(tableId, tableNumber) {
+            if (confirm('Do you want to select Table ' + tableNumber + ' for this order?')) {
+                // Submit form to select table
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ url_for("select_table") }}';
+                
+                const tableIdInput = document.createElement('input');
+                tableIdInput.type = 'hidden';
+                tableIdInput.name = 'table_id';
+                tableIdInput.value = tableId;
+
+                const tableNumberInput = document.createElement('input');
+                tableNumberInput.type = 'hidden';
+                tableNumberInput.name = 'table_number';
+                tableNumberInput.value = tableNumber;
+                
+                form.appendChild(tableIdInput);
+                form.appendChild(tableNumberInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+{% endblock %}
