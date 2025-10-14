@@ -1,46 +1,15 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Customer Orders</title>
-    <style>
+{% extends "navbar.html" %}
+
+{% block title %}Customer Orders{% endblock %}
+
+{% block additional_styles %}
         body {
             font-family: Arial, sans-serif;
             background-color: #f8f8f8;
             margin: 0;
             padding: 0;
         }
-        .navbar {
-            background-color: #f39c12;
-            overflow: hidden;
-            position: sticky;
-            top: 0;
-            width: 100%;
-            z-index: 1000;
-            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
-            border-radius: 10px;
-        }
-        .navbar a {
-            float: left;
-            display: block;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            padding: 14px 20px;
-            text-decoration: none;
-        }
-        .navbar a:hover {
-            background-color: #e67e22;
-        }
-        .navbar .brand {
-            float: left;
-            margin-top: 3px;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        .navbar-right {
-            float: right;
-            margin-right: 20px;
-        }
+
         .container {
             padding: 20px;
         }
@@ -90,20 +59,48 @@
             color: white;
             cursor: pointer;
         }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <a class="brand" href="{{ url_for('staff_dashboard') }}">Jorem's Restaurant</a>
-        <div class="navbar-right">
-            <a href="{{ url_for('staff_dashboard') }}">Menu Management</a>
-            <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
-            <a href="{{ url_for('table_list') }}">Tables</a>
-            <a href="{{ url_for('staff_orders') }}">Orders</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </div>
-    </div>
 
+        /* Status-based row colors */
+        .status-pending {
+            background-color: #fff3cd;
+        }
+        .status-preparing {
+            background-color: #cff4fc;
+        }
+        .status-ready {
+            background-color: #d1e7dd;
+        }
+        .status-completed {
+            background-color: #e8e8e8;
+        }
+        .status-cancelled {
+            background-color: #f8d7da;
+        }
+
+        /* Status text colors */
+        .text-pending {
+            color: #856404;
+            font-weight: bold;
+        }
+        .text-preparing {
+            color: #055160;
+            font-weight: bold;
+        }
+        .text-ready {
+            color: #0f5132;
+            font-weight: bold;
+        }
+        .text-completed {
+            color: #495057;
+            font-weight: bold;
+        }
+        .text-cancelled {
+            color: #842029;
+            font-weight: bold;
+        }
+    {% endblock %}
+
+{% block content %}
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -132,7 +129,7 @@
                     </thead>
                     <tbody>
                         {% for order in orders %}
-                        <tr>
+                        <tr class="status-{{ order.status }}">
                             <td>{{ order.id }}</td>
                             <td>{{ order.username }}</td>
                             <td class="order-items">
@@ -148,7 +145,7 @@
                                 </ul>
                             </td>
                             <td>₱{{ "%.2f"|format(order.total) }}</td>
-                            <td>{{ order.status | capitalize }}</td>
+                            <td class="text-{{ order.status }}">{{ order.status | capitalize }}</td>
                             <td>
                                 <form class="status-form" action="{{ url_for('update_order_status') }}" method="post">
                                     <input type="hidden" name="order_id" value="{{ order.id }}">
@@ -173,5 +170,4 @@
             </div>
         </div>
     </div>
-</body>
-</html>
+{% endblock %}

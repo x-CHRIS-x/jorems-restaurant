@@ -39,7 +39,6 @@ def staff_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
 def _ensure_cart_schema(cart_items):
     # Ensure each cart item has price and image fields and correct subtotal
     if not cart_items:
@@ -200,13 +199,13 @@ def add_single_item():
         if "cart" not in session:
             session["cart"] = []
         
-        # A unique key for the cart item including the request
-        cart_item_key = f"{item_id}_{request_note}"
-
         cart = session["cart"]
         found = False
         for cart_item in cart:
-            if cart_item.get("key") == cart_item_key:
+            # If both items have no special request, match by ID
+            # Or if both items have the same special request and ID
+            if (str(cart_item.get("id")) == str(item_id) and 
+                cart_item.get("request", "") == request_note):
                 cart_item["qty"] += qty
                 cart_item["subtotal"] = cart_item["qty"] * cart_item["price"]
                 found = True
@@ -214,7 +213,6 @@ def add_single_item():
         
         if not found:
             cart.append({
-                "key": cart_item_key,
                 "id": item['id'],
                 "name": item['name'], 
                 "qty": qty, 
@@ -228,6 +226,52 @@ def add_single_item():
         session.modified = True
     
     flash(f"Added {item['name']} to your order.", "success")
+    return redirect(url_for("index"))
+
+@app.route("/add_multiple_items", methods=["POST"])
+def add_multiple_items():
+    item_ids = request.form.getlist("item_id[]")
+    item_names = request.form.getlist("item_name[]")
+    item_prices = request.form.getlist("item_price[]")
+    item_images = request.form.getlist("item_image[]")
+    item_quantities = request.form.getlist("item_quantity[]")
+
+    if "cart" not in session:
+        session["cart"] = []
+    
+    cart = session["cart"]
+
+    for i in range(len(item_ids)):
+        qty = int(item_quantities[i])
+        if qty > 0:
+            item_id = item_ids[i]
+            name = item_names[i]
+            price = float(item_prices[i])
+            image = item_images[i]
+
+            # Check if item already in cart
+            found = False
+            for cart_item in cart:
+                # Match items by ID and ensure no special request
+                if str(cart_item.get("id")) == str(item_id) and not cart_item.get("request"):
+                    cart_item["qty"] += qty
+                    cart_item["subtotal"] = cart_item["qty"] * cart_item["price"]
+                    found = True
+                    break
+
+            if not found:
+                cart.append({
+                    "id": item_id,
+                    "name": name,
+                    "qty": qty,
+                    "price": price,
+                    "image": image,
+                    "subtotal": qty * price,
+                    "request": ""  # Explicitly set empty request for bulk-added items
+                })
+
+    session["cart"] = cart
+    session.modified = True
     return redirect(url_for("index"))
 
 @app.route("/update_cart", methods=["POST"])
@@ -316,7 +360,6 @@ def remove_item():
     elif return_to == "staff_menu":
         return redirect(url_for("staff_menu"))
     return redirect(url_for("index"))
-
 
 @app.route("/budget_mode", methods=["GET", "POST"])
 def budget_mode():
@@ -531,7 +574,6 @@ def confirm_checkout():
         qr_image=f"/{qr_path}"
     )
 
-
 @app.route("/checkout", methods=["POST"])
 @login_required
 def checkout():
@@ -552,7 +594,6 @@ def clear_cart():
     session["cart"] = []
     session.modified = True
     return redirect(url_for("cart"))
-
 
 @app.route("/download_receipt")
 def download_receipt():
