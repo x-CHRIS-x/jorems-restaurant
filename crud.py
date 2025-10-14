@@ -112,10 +112,13 @@ def create_order(user_id, items, total, status="pending"):
     conn.close()
     return order_id
 
-def get_orders():
+def get_orders(limit=None):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM orders ORDER BY id DESC")
+    if limit:
+        cursor.execute("SELECT * FROM orders ORDER BY created_at DESC LIMIT ?", (limit,))
+    else:
+        cursor.execute("SELECT * FROM orders ORDER BY created_at DESC")
     orders = cursor.fetchall()
     conn.close()
     return orders

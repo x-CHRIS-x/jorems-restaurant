@@ -41,6 +41,7 @@ def init_tables():
             total REAL,
             status TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            estimated_time INTEGER DEFAULT 15,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
@@ -94,7 +95,17 @@ def create_table(table_number, capacity, status="available"):
 def get_tables():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tables")
+    cursor.execute("""
+        SELECT t.*, o.status as order_status
+        FROM tables t
+        LEFT JOIN (
+            SELECT table_id, status
+            FROM orders
+            WHERE status != 'completed'
+            AND table_id IS NOT NULL
+            ORDER BY created_at DESC
+        ) o ON t.id = o.table_id
+    """)
     tables = cursor.fetchall()
     conn.close()
     return tables

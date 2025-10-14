@@ -185,12 +185,12 @@
                 <button type="submit" class="confirm-btn">✓ Confirm & Checkout</button>
             </form>
             
-            <a href="{{ url_for('cart') }}" class="cancel-btn" style="padding: 12px 25px; margin: 10px; background: #dc3545; color: white; text-decoration: none; border-radius: 8px; display: inline-block;">✗ Cancel</a>
+            {% if session.is_staff %}
+                <a href="{{ url_for('staff_menu') }}" class="cancel-btn" style="padding: 12px 25px; margin: 10px; background: #dc3545; color: white; text-decoration: none; border-radius: 8px; display: inline-block;">✗ Cancel</a>
+            {% else %}
+                <a href="{{ url_for('index') }}" class="cancel-btn" style="padding: 12px 25px; margin: 10px; background: #dc3545; color: white; text-decoration: none; border-radius: 8px; display: inline-block;">✗ Cancel</a>
+            {% endif %}
         </div>
-    </div>
-    
-    <div style="margin-top: 20px;">
-        <a href="/">← Back to Menu</a>
     </div>
 </body>
 </html>

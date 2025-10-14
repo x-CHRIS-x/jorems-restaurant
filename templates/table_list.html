@@ -1,186 +1,436 @@
 {% extends "navbar.html" %}
-
 {% block title %}Table List - Jorem's Restaurant{% endblock %}
 
 {% block additional_styles %}
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f8f8f8;
-            margin: 0;
-            padding: 0;
-            padding-bottom: 50px;
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: #f8f8f8;
+        margin: 0;
+        padding: 0;
+        padding-bottom: 50px;
+    }
+
+    .navbar {
+        background-color: #f39c12;
+        overflow: hidden;
+        position: sticky;
+        top: 0;
+        width: 100%;
+        z-index: 1000;
+        box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+    }
+
+    .navbar a {
+        float: left;
+        display: block;
+        color: white;
+        font-weight: bold;
+        text-align: center;
+        padding: 14px 20px;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+
+    .navbar a:hover {
+        background-color: #e67e22;
+        color: #fff;
+    }
+
+    .navbar .brand {
+        float: left;
+        margin-top: 3px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .navbar-right {
+        float: right;
+        margin-right: 20px;
+    }
+
+    .page-layout {
+        display: flex;
+        margin: 0 auto;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .container {
+        flex: 1;
+        padding: 20px;
+    }
+
+    .orders-sidebar {
+        width: 350px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        height: calc(100vh - 100px);
+        position: sticky;
+        top: 80px;
+        overflow-y: auto;
+    }
+
+    .order-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #f39c12;
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .order-id {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .order-timer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 4px;
+        margin-top: 8px;
+        font-size: 0.9em;
+    }
+
+    .timer-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .timer-preparing {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+
+    .timer-ready {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .estimated-time {
+        font-size: 0.85em;
+        color: #6c757d;
+    }
+
+    .order-status {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.9em;
+        font-weight: bold;
+    }
+
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-preparing {
+        background: #cce5ff;
+        color: #004085;
+    }
+
+    .status-ready {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-completed {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+
+    .table-info {
+        font-size: 0.9em;
+        color: #666;
+        margin: 5px 0;
+    }
+
+    .order-items {
+        font-size: 0.9em;
+        color: #555;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #eee;
+    }
+
+    h1,
+    h3 {
+        margin: 15px 0;
+    }
+
+    .table-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        position: relative;
+    }
+
+    .table-number {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .table-capacity {
+        color: #666;
+        margin: 10px 0;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+
+    .status-available {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-occupied {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Order status colors within occupied tables */
+    .status-occupied[data-order-status="pending"] {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .status-occupied[data-order-status="preparing"] {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+
+    .status-occupied[data-order-status="ready"] {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-occupied[data-order-status="served"] {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+
+    /* Disabled button style */
+    .action-button.clear:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.65;
+    }
+
+    .action-button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        background-color: #f39c12;
+        color: white;
+        transition: background-color 0.3s;
+    }
+
+    .action-button:hover {
+        background-color: #e67e22;
+    }
+
+    .action-button.clear {
+        background-color: #dc3545;
+    }
+
+    .action-button.clear:hover {
+        background-color: #c82333;
+    }
+
+    .flash-message {
+        padding: 15px;
+        margin: 20px auto;
+        border-radius: 4px;
+        max-width: 80%;
+    }
+
+    .flash-success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+
+    .flash-error {
+        background-color: #f8d7da;
+        border-color: #f5c2c7;
+        color: #721c24;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const orderTimers = {};
+
+        function formatTime(minutes, seconds) {
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
         }
 
-        .navbar {
-            background-color: #f39c12;
-            overflow: hidden;
-            position: sticky;
-            top: 0;
-            width: 100%;
-            z-index: 1000;
-            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
-            border-radius: 10px;
+        function updateTimer(orderElement) {
+            const timer = orderElement.querySelector('.order-timer');
+            const orderId = timer.dataset.orderId;
+            const timestamp = timer.dataset.timestamp;
+            const orderStatus = timer.dataset.status;
+            const estimatedTime = parseInt(timer.dataset.estimated);
+
+            const elapsedTimeElement = timer.querySelector('.elapsed-time');
+            const estimatedTimeElement = timer.querySelector('.estimated-time');
+
+            if (!timestamp) return;
+
+            const startTime = new Date(timestamp).getTime();
+
+            const endTime = startTime + (estimatedTime * 60 * 1000);
+
+            if (orderTimers[orderId]) {
+                clearInterval(orderTimers[orderId]);
+            }
+
+            function update() {
+                const currentTime = new Date().getTime();
+                const totalTime = estimatedTime * 60 * 1000;
+                const elapsedTime = currentTime - startTime;
+                const remainingMilliseconds = totalTime - elapsedTime;
+                const remainingMinutes = Math.floor(remainingMilliseconds / (1000 * 60));
+                const remainingSeconds = Math.floor((remainingMilliseconds % (1000 * 60)) / 1000);
+
+                if (remainingMilliseconds <= 0) {
+                    const minutesLate = Math.abs(remainingMinutes);
+                    elapsedTimeElement.textContent = `${minutesLate}m Late!`;
+                    elapsedTimeElement.style.color = '#dc3545'; // Red color for late
+                    elapsedTimeElement.style.fontWeight = 'bold';
+                } else if (remainingMinutes >= 3) {
+                    elapsedTimeElement.textContent = formatTime(remainingMinutes, remainingSeconds);
+                    elapsedTimeElement.style.color = '#155724'; // Green color for on time
+                    elapsedTimeElement.style.fontWeight = 'normal';
+                    estimatedTimeElement.textContent = 'On Time';
+                } else {
+                    elapsedTimeElement.textContent = formatTime(remainingMinutes, remainingSeconds);
+                    elapsedTimeElement.style.color = '#856404'; // Yellow color for approaching late
+                    elapsedTimeElement.style.fontWeight = 'bold';
+                    estimatedTimeElement.textContent = 'Approaching Late';
+                }
+
+                const timerElement = timer;
+                timerElement.className = 'order-timer';
+
+                if (orderStatus === 'pending') {
+                    timerElement.classList.add('timer-pending');
+                } else if (orderStatus === 'preparing') {
+                    timerElement.classList.add('timer-preparing');
+                } else if (orderStatus === 'ready') {
+                    timerElement.classList.add('timer-ready');
+                }
+            }
+
+            update();
+            orderTimers[orderId] = setInterval(update, 1000);
         }
 
-        .navbar a {
-            float: left;
-            display: block;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            padding: 14px 20px;
-            text-decoration: none;
-            transition: 0.3s;
-        }
-
-        .navbar a:hover {
-            background-color: #e67e22;
-            color: #fff;
-        }
-
-        .navbar .brand {
-            float: left;
-            margin-top: 3px;
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .navbar-right {
-            float: right;
-            margin-right: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        h1, h3 {
-            margin: 15px 0;
-        }
-
-        .table-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            padding: 20px;
-        }
-
-        .table-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            text-align: center;
-            position: relative;
-        }
-
-        .table-number {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .table-capacity {
-            color: #666;
-            margin: 10px 0;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .status-available {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .status-occupied {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .action-button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            background-color: #f39c12;
-            color: white;
-            transition: background-color 0.3s;
-        }
-
-        .action-button:hover {
-            background-color: #e67e22;
-        }
-
-        .action-button.clear {
-            background-color: #dc3545;
-        }
-
-        .action-button.clear:hover {
-            background-color: #c82333;
-        }
-
-        .flash-message {
-            padding: 15px;
-            margin: 20px auto;
-            border-radius: 4px;
-            max-width: 80%;
-        }
-
-        .flash-success {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
-        }
-
-        .flash-error {
-            background-color: #f8d7da;
-            border-color: #f5c2c7;
-            color: #721c24;
-        }
-    </style>
+        document.querySelectorAll('.order-item').forEach(updateTimer);
+    });
+</script>
 {% endblock %}
 
 {% block content %}
+<div class="page-layout">
     <div class="container">
         <h1>Table Management</h1>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
 
         <div class="table-grid">
             {% for table in tables %}
             <div class="table-card">
                 <div class="table-number">Table {{ table.table_number }}</div>
                 <div class="table-capacity">Capacity: {{ table.capacity }} persons</div>
-                <div class="status-badge status-{{ table.status }}">
-                    {{ table.status|title }}
+                <div class="status-badge status-{{ table.status }}" {% if table.order_status %}data-order-status="{{ table.order_status }}"{% endif %}>
+                    {% if table.status == 'occupied' and table.order_status %}
+                        {{ table.status|title }} - {{ table.order_status|title }}
+                    {% else %}
+                        {{ table.status|title }}
+                    {% endif %}
                 </div>
+
                 {% if table.status == 'occupied' %}
                 <form action="{{ url_for('clear_table') }}" method="post">
                     <input type="hidden" name="table_id" value="{{ table.id }}">
-                    <button type="submit" class="action-button clear" onclick="return confirm('Are you sure you want to mark this table as available?')">
+                    <button type="submit" class="action-button clear"
+                        onclick="return confirm('Are you sure you want to mark this table as available?')"
+                        {% if table.order_status != 'served' %}disabled{% endif %}>
                         Clear Table
                     </button>
                 </form>
+                {% if table.order_status != 'served' %}
+                <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
+                    Can only clear table after customers are served
+                </div>
+                {% endif %}
                 {% endif %}
             </div>
             {% endfor %}
         </div>
     </div>
+
+    <div class="orders-sidebar">
+        <h3>Table Orders</h3>
+
+        {% for order in orders|sort(attribute='timestamp', reverse=True) if order.table_id %}
+        <div class="order-item">
+            <div class="order-header">
+                <span class="order-id">Order #{{ order.id }}</span>
+                <span class="order-status status-{{ order.status }}">{{ order.status|title }}</span>
+            </div>
+
+            <div class="order-timer timer-{{ order.status }}"
+                data-order-id="{{ order.id }}"
+                data-status="{{ order.status }}"
+                data-timestamp="{{ order.timestamp }}"
+                data-estimated="{{ order.estimated_time }}">
+                <span class="elapsed-time">0:00</span>
+                <span class="estimated-time">Est: {{ order.estimated_time }} min</span>
+            </div>
+
+            <div class="table-info">
+                <strong>Table:</strong> {{ order.table_number }}
+            </div>
+
+            <div class="order-items">
+                {% for item in order.order_items %}
+                <div>{{ item.name }} x{{ item.qty }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <p style="color: #666; text-align: center;">No table orders at the moment</p>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}

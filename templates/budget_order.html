@@ -1,15 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Budget Mode - Jorem's Restaurant</title>
+{% extends "navbar.html" %}
+
+{% block title %}Budget Mode - Jorem's Restaurant{% endblock %}
+
+{% block additional_styles %}
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f8f8f8;
-            margin: 0;
-            padding: 0;
-            padding-bottom: 50px;
+        .modal-body .modal-img {
+            max-height: 300px;
+            object-fit: cover;
+            width: 100%;
+            border-radius: .5rem;
         }
 
         h1, h3 {
@@ -227,20 +226,9 @@
         .order-section form { margin: 0; width: 100%; }
         .order-section .order-btn { width: 100%; }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <a class="brand" href="/"> Jorem's Restaurant</a>
-        <div class="navbar-right">
-            <a href="{{ url_for('cart') }}">Cart</a>
-            {% if session.logged_in %}
-                <a href="{{ url_for('logout') }}">Logout </a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-            {% endif %}
-        </div>
-    </div>
+{% endblock %}
 
+{% block content %}
     <div class="page-container">
         <div class="menu-section">
             <h1>Budget Mode</h1>
@@ -250,30 +238,70 @@
             
             {% if suggested %}
             <h3>Items Within Your Budget</h3>
-            <div class="menu-grid">
-                {% for item in suggested %}
-                <div class="menu-card">
-                    <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
+            <form action="{{ url_for('add_multiple_items') }}" method="post" id="menu-form">
+                <input type="hidden" name="return_to" value="budget_mode">
+                <div class="menu-grid">
+                    {% for item in suggested %}
+                    <div class="menu-card" id="item-{{ item.id }}" data-price="{{ item.price }}">
+                    <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}" data-bs-toggle="modal" data-bs-target="#menuItemModal-{{ item.id }}" style="cursor: pointer;">
                     <div class="title">{{ item.name | safe }}</div>
                     <div class="price">₱ {{ '%.2f'|format(item.price) }}</div>
                     <div class="controls">
-                        <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
-                            <input type="hidden" name="item_id" value="{{ item.id }}">
-                            <input type="hidden" name="change" value="-1">
-                            <input type="hidden" name="return_to" value="budget_mode">
-                            <button type="submit" class="quantity-btn">-</button>
-                        </form>
-                        <span class="quantity-display">{{ item.quantity }}</span>
-                        <form action="{{ url_for('update_cart') }}" method="post" style="display: inline;">
-                            <input type="hidden" name="item_id" value="{{ item.id }}">
-                            <input type="hidden" name="change" value="1">
-                            <input type="hidden" name="return_to" value="budget_mode">
-                            <button type="submit" class="quantity-btn">+</button>
-                        </form>
+                        <button type="button" class="quantity-btn btn-decrease" data-item-id="{{ item.id }}">-</button>
+                        <span class="quantity-display" id="quantity-{{ item.id }}">{{ item.quantity }}</span>
+                        <button type="button" class="quantity-btn btn-increase" data-item-id="{{ item.id }}">+</button>
+                    </div>
+                    <input type="hidden" name="item_id[]" value="{{ item.id }}">
+                    <input type="hidden" name="item_name[]" value="{{ item.name }}">
+                    <input type="hidden" name="item_price[]" value="{{ item.price }}">
+                    <input type="hidden" name="item_image[]" value="{{ item.image }}">
+                    <input type="hidden" name="item_quantity[]" id="input-quantity-{{ item.id }}" value="{{ item.quantity }}">
+                </div>
+
+                <!-- Modal for {{ item.name }} -->
+                <div class="modal fade" id="menuItemModal-{{ item.id }}" tabindex="-1" aria-labelledby="menuItemModalLabel-{{ item.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="menuItemModalLabel-{{ item.id }}">{{ item.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{ url_for('add_single_item') }}" method="post" id="form-{{ item.id }}">
+                                    <img src="{{ url_for('static', filename=item.image) }}" class="modal-img mb-3" alt="{{ item.name }}">
+                                    <h5 class="text-start fw-bold">Description</h5>
+                                    <div class="modal-description">
+                                        <p class="text-start">
+                                            {{ item.description or "No description available for this delicious item yet, but we're sure you'll love it!" }}
+                                        </p>
+                                    </div>
+                                    <div class="d-flex justify-content-center align-items-center my-3">
+                                        <label class="me-3">Quantity:</label>
+                                        <button type="button" class="quantity-btn modal-quantity-btn" data-change="-1">-</button>
+                                        <input type="number" class="quantity-display modal-quantity-input" name="quantity" value="1" min="1" style="width: 60px; text-align: center;">
+                                        <button type="button" class="quantity-btn modal-quantity-btn" data-change="1">+</button>
+                                    </div>
+                                    <div class="form-group text-start mt-3">
+                                        <label for="request-{{ item.id }}">Special Request (e.g., "no onions")</label>
+                                        <textarea class="form-control" id="request-{{ item.id }}" name="request" rows="2"></textarea>
+                                    </div>
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    <input type="hidden" name="return_to" value="budget_mode">
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" form="form-{{ item.id }}" class="btn btn-primary">Add to Order</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
+                <div class="action-container" style="background:#fff;padding:15px;border-radius:12px;box-shadow:0 -2px 8px rgba(0,0,0,0.1);">
+                    <h3 style="margin:0;">Total: ₱<span id="total-price">0.00</span></h3>
+                    <button type="submit" class="order-btn" id="add-to-cart-btn">Add to Cart</button>
+                </div>
+            </form>
             <div class="action-container">
                 <a href="/">Back to Menu</a>
             </div>
@@ -299,22 +327,34 @@
                     <div class="cart-item">
                         <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
                         <div class="cart-item-info">
-                            <div class="cart-item-name">{{ item.name }}</div>
+                            <div class="cart-item-name">
+                                {{ item.name }}
+                                {% if item.request %}
+                                    <small class="text-muted d-block" style="font-size: 0.85em;">(Special Request: {{ item.request }})</small>
+                                {% endif %}
+                            </div>
                             <div class="cart-item-price">₱ {{ '%.2f'|format(item.price) }}</div>
                             <div class="cart-qty-controls">
                                 <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
                                     <input type="hidden" name="item_id" value="{{ item.id }}">
                                     <input type="hidden" name="change" value="-1">
+                                    <input type="hidden" name="return_to" value="budget_mode">
                                     <button type="submit" class="quantity-btn">-</button>
                                 </form>
-                                <span class="quantity-display">{{ item.qty }}</span>
+                                <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    <input type="hidden" name="return_to" value="budget_mode">
+                                    <input type="number" name="new_quantity" value="{{ item.qty }}" min="0" class="quantity-display" style="width: 60px; text-align: center;" onchange="this.form.submit()">
+                                </form>
                                 <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
                                     <input type="hidden" name="item_id" value="{{ item.id }}">
                                     <input type="hidden" name="change" value="1">
+                                    <input type="hidden" name="return_to" value="budget_mode">
                                     <button type="submit" class="quantity-btn">+</button>
                                 </form>
                                 <form action="{{ url_for('remove_item') }}" method="post" style="display:inline; margin-left:8px;">
                                     <input type="hidden" name="item_name" value="{{ item.name }}">
+                                    <input type="hidden" name="return_to" value="budget_mode">
                                     <button type="submit" class="trash-btn" title="Remove">
                                         <img src="{{ url_for('static', filename='images/trash.png') }}" alt="Remove">
                                     </button>
@@ -346,5 +386,81 @@
             </div>
         </aside>
     </div>
-</body>
-</html>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+            const menuForm = document.getElementById('menu-form');
+            const totalPriceEl = document.getElementById('total-price');
+
+            function updateTotal() {
+                let total = 0;
+                document.querySelectorAll('.menu-card').forEach(card => {
+                    const price = parseFloat(card.dataset.price);
+                    const quantity = parseInt(card.querySelector('.quantity-display').textContent);
+                    total += price * quantity;
+                });
+                totalPriceEl.textContent = total.toFixed(2);
+            }
+
+            menuForm.addEventListener('click', function(e) {
+                const target = e.target;
+                const isIncrease = target.classList.contains('btn-increase');
+                const isDecrease = target.classList.contains('btn-decrease');
+
+                if (isIncrease || isDecrease) {
+                    const itemId = target.dataset.itemId;
+                    const quantityEl = document.getElementById(`quantity-${itemId}`);
+                    const inputEl = document.getElementById(`input-quantity-${itemId}`);
+                    let currentQuantity = parseInt(quantityEl.textContent);
+
+                    if (isIncrease) currentQuantity++;
+                    if (isDecrease && currentQuantity > 0) currentQuantity--;
+
+                    quantityEl.textContent = currentQuantity;
+                    inputEl.value = currentQuantity;
+                    updateTotal();
+                }
+            });
+
+            document.getElementById('add-to-cart-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                let hasItems = false;
+
+                document.querySelectorAll('.menu-card').forEach(card => {
+                    const itemId = card.id.split('-')[1];
+                    const quantity = parseInt(document.getElementById(`quantity-${itemId}`).textContent);
+                    document.getElementById(`input-quantity-${itemId}`).value = quantity;
+                    if (quantity > 0) hasItems = true;
+                });
+
+                if (!hasItems) {
+                    alert('Please select at least one item.');
+                    return;
+                }
+
+                menuForm.submit();
+
+                // Reset after form submission
+                document.querySelectorAll('.menu-card').forEach(card => {
+                    const itemId = card.id.split('-')[1];
+                    document.getElementById(`quantity-${itemId}`).textContent = '0';
+                    document.getElementById(`input-quantity-${itemId}`).value = '0';
+                });
+                totalPriceEl.textContent = '0.00';
+            });
+
+            // Handle modal quantity buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal-quantity-btn')) {
+                    const change = parseInt(e.target.dataset.change);
+                    const input = e.target.closest('.d-flex').querySelector('.modal-quantity-input');
+                    let value = parseInt(input.value) + change;
+                    if (value >= 1) { // Don't allow less than 1
+                        input.value = value;
+                    }
+                }
+            });
+    </script>
+{% endblock %}

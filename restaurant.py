@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, session, redirect, url_for, f
 from crud import *
 from crud_tables import *
 from werkzeug.security import check_password_hash
+from datetime import datetime
 from functools import wraps
 from werkzeug.utils import secure_filename
 import os
@@ -176,7 +177,16 @@ def add_item():
 
     session["cart"] = [item for item in cart if item["qty"] > 0] # Clean up items with 0 quantity
     session.modified = True
-    return redirect(url_for("cart"))
+    
+    # Redirect based on user type and return_to parameter
+    return_to = request.form.get("return_to")
+    if session.get("is_staff"):
+        if return_to == "tables":
+            return redirect(url_for("tables"))
+        elif return_to == "staff_menu":
+            return redirect(url_for("staff_menu"))
+        return redirect(url_for("staff_menu"))  # Default staff redirect
+    return redirect(url_for("index"))  # Default customer redirect
 
 @app.route("/add_single_item", methods=["POST"])
 def add_single_item():
@@ -226,7 +236,16 @@ def add_single_item():
         session.modified = True
     
     flash(f"Added {item['name']} to your order.", "success")
-    return redirect(url_for("index"))
+    
+    # Redirect based on user type and return_to parameter
+    return_to = request.form.get("return_to")
+    if session.get("is_staff"):
+        if return_to == "tables":
+            return redirect(url_for("tables"))
+        elif return_to == "staff_menu":
+            return redirect(url_for("staff_menu"))
+        return redirect(url_for("staff_menu"))  # Default staff redirect
+    return redirect(url_for("budget_mode"))  # Default customer redirect
 
 @app.route("/add_multiple_items", methods=["POST"])
 def add_multiple_items():
@@ -272,17 +291,44 @@ def add_multiple_items():
 
     session["cart"] = cart
     session.modified = True
-    return redirect(url_for("index"))
+    
+    # Redirect based on return_to parameter and user type
+    return_to = request.form.get("return_to")
+    if return_to == "budget_mode":
+        return redirect(url_for("budget_mode"))
+    elif return_to == "tables":
+        return redirect(url_for("tables"))
+    elif return_to == "staff_menu":
+        return redirect(url_for("staff_menu"))
+    elif session.get("is_staff"):
+        return redirect(url_for("staff_menu"))  # Default staff redirect
+    return redirect(url_for("index"))  # Default customer redirect
 
 @app.route("/update_cart", methods=["POST"])
 def update_cart():
+    # Ensure we have an item_id to work with
     item_id = request.form.get("item_id")
-    change = request.form.get("change", "0")
-    new_quantity = request.form.get("new_quantity")
-    return_to = request.form.get("return_to")
-    
     if not item_id:
+        flash("Invalid request: No item specified", "error")
         return redirect(url_for("index"))
+    
+    # Get the item_id from the form
+    if not item_id:
+        flash("Invalid request: No item specified", "error")
+        return redirect(url_for("index"))
+        
+    # Parse quantity changes
+    try:
+        change = int(request.form.get("change", "0"))
+    except (ValueError, TypeError):
+        change = 0
+        
+    try:
+        new_quantity = int(request.form.get("new_quantity", "0"))
+    except (ValueError, TypeError):
+        new_quantity = 0
+    
+    return_to = request.form.get("return_to")
     
     # Get the menu item details
     menu_items = get_menu_items()
@@ -293,8 +339,10 @@ def update_cart():
             break
     
     if not item:
+        flash("Invalid request: Item not found", "error")
         return redirect(url_for("index"))
     
+    # Initialize cart if needed
     if "cart" not in session:
         session["cart"] = []
     
@@ -303,58 +351,55 @@ def update_cart():
     
     # Find existing item in cart
     for cart_item in cart:
-        # We must match by a consistent key. Since this is a simple +/- update,
-        # we assume it doesn't have a special request.
-        cart_item_key = f"{cart_item.get('id')}_{cart_item.get('request', '')}"
-        if cart_item_key == f"{item['id']}_":
-            if new_quantity is not None:
+        # We must match by a consistent key using item_id
+        if str(cart_item.get("id")) == str(item_id):
+            current_qty = int(cart_item.get("qty", 0))
+            
+            if new_quantity > 0:
                 # Direct quantity update
-                try:
-                    new_qty = int(new_quantity)
-                except ValueError:
-                    new_qty = 0
+                new_qty = new_quantity
             else:
                 # Increment/decrement update
-                try:
-                    change = int(change)
-                    new_qty = cart_item["qty"] + change
-                except ValueError:
-                    new_qty = cart_item["qty"]
+                new_qty = max(0, current_qty + change)
             
             if new_qty <= 0:
                 # Remove item from cart if quantity becomes 0 or negative
                 cart.remove(cart_item)
             else:
-                # Update quantity, price, image, and subtotal
+                # Update quantity and recompute subtotal with current price
                 cart_item["qty"] = new_qty
-                cart_item["price"] = item["price"]
+                cart_item["price"] = float(item["price"])  # Ensure price is float
                 cart_item["image"] = item["image"]
-                cart_item["subtotal"] = new_qty * item["price"]
+                cart_item["subtotal"] = new_qty * cart_item["price"]
             found = True
             break
     
-    # If item not in cart and we're adding (change > 0)
+    # Add new item to cart if not found and we're adding (change > 0)
     if not found and change > 0:
+        new_qty = max(1, change)  # Ensure at least 1 item added
         cart.append({
             "id": item["id"],
             "name": item["name"],
-            "qty": change,
-            "price": item["price"],
-            "subtotal": change * item["price"],
-            "image": item["image"]
+            "qty": new_qty,
+            "price": float(item["price"]),  # Ensure price is float
+            "subtotal": new_qty * float(item["price"]),
+            "image": item["image"],
+            "request": ""  # Initialize empty request for new items
         })
     
     session["cart"] = cart
     session.modified = True
     
-    if return_to == "budget_mode":
-        return redirect(url_for("budget_mode", _anchor=f"item-{item_id}"))
-    elif return_to == "tables":
-        return redirect(url_for("tables", _anchor=f"item-{item_id}"))
-    elif return_to == "staff_menu":
-        return redirect(url_for("staff_menu", _anchor=f"item-{item_id}"))
-        
-    return redirect(url_for("index", _anchor=f"item-{item_id}"))
+    # Return to appropriate page with anchor to the updated item
+    redirect_routes = {
+        "budget_mode": "budget_mode",
+        "tables": "tables",
+        "staff_menu": "staff_menu",
+        None: "index"  # Default route
+    }
+    
+    route = redirect_routes.get(return_to, "index")
+    return redirect(url_for(route, _anchor=f"item-{item_id}"))
 
 @app.route("/remove_item", methods=["POST"])
 def remove_item():
@@ -369,11 +414,16 @@ def remove_item():
     session["cart"] = cart
     session.modified = True
     
-    if return_to == "tables":
+    # Redirect based on return_to parameter and user type
+    if return_to == "budget_mode":
+        return redirect(url_for("budget_mode"))
+    elif return_to == "tables":
         return redirect(url_for("tables"))
     elif return_to == "staff_menu":
         return redirect(url_for("staff_menu"))
-    return redirect(url_for("index"))
+    elif session.get("is_staff"):
+        return redirect(url_for("staff_menu"))  # Default staff redirect
+    return redirect(url_for("index"))  # Default customer redirect
 
 @app.route("/budget_mode", methods=["GET", "POST"])
 def budget_mode():
@@ -607,7 +657,16 @@ def checkout():
 def clear_cart():
     session["cart"] = []
     session.modified = True
-    return redirect(url_for("cart"))
+    
+    # Redirect based on user type and return_to parameter
+    return_to = request.form.get("return_to")
+    if session.get("is_staff"):
+        if return_to == "tables":
+            return redirect(url_for("tables"))
+        elif return_to == "staff_menu":
+            return redirect(url_for("staff_menu"))
+        return redirect(url_for("staff_menu"))  # Default staff redirect
+    return redirect(url_for("cart"))  # Default customer redirect
 
 @app.route("/download_receipt")
 def download_receipt():
@@ -770,7 +829,41 @@ def staff_dashboard():
 @staff_required
 def table_list():
     tables = get_tables()
-    return render_template("table_list.html", tables=tables)
+    orders_data = get_orders(limit=10)  # Get only 10 most recent orders
+    
+    # Process orders to include table information and parse items
+    orders = []
+    for order in orders_data:
+        if order['table_id'] and order['status'] != 'completed':  # Only include active orders with table assignments
+            order_dict = dict(order)
+            # Get table number for this order
+            for table in tables:
+                if str(table['id']) == str(order['table_id']):
+                    order_dict['table_number'] = table['table_number']
+                    break
+            # Parse the items JSON string
+            try:
+                order_dict['order_items'] = json.loads(order['items'])
+                if isinstance(order_dict['order_items'], dict):
+                    order_dict['order_items'] = [order_dict['order_items']]
+            except (json.JSONDecodeError, TypeError):
+                order_dict['order_items'] = []
+                
+            # Convert SQLite timestamp to ISO format for JavaScript
+            if order_dict['created_at']:
+                try:
+                    # Parse the SQLite timestamp and format it for JavaScript
+                    timestamp = order_dict['created_at'].replace(' ', 'T') + '.000Z'
+                    order_dict['timestamp'] = timestamp
+                except:
+                    # If there's any error, use current time
+                    order_dict['timestamp'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            
+            # Default estimated time if not set
+            order_dict['estimated_time'] = order_dict.get('estimated_time', 15)
+            orders.append(order_dict)
+    
+    return render_template("table_list.html", tables=tables, orders=orders)
 
 @app.route("/staff/clear_table", methods=["POST"])
 @staff_required
@@ -778,8 +871,22 @@ def clear_table():
     table_id = request.form.get("table_id")
     if table_id:
         try:
-            update_table_status(table_id, "available")
-            flash("Table marked as available.", "success")
+            # Get current order for this table
+            orders_data = get_orders()
+            current_order = None
+            for order in orders_data:
+                if str(order['table_id']) == str(table_id) and order['status'] == 'served':
+                    current_order = order
+                    break
+            
+            if current_order:
+                # Update order status to completed
+                update_order(current_order['id'], 'completed')
+                # Update table status to available
+                update_table_status(table_id, "available")
+                flash("Table cleared and order marked as completed.", "success")
+            else:
+                flash("Cannot clear table - order must be in 'served' status.", "warning")
         except Exception as e:
             flash(f"Error clearing table: {str(e)}", "error")
     else:

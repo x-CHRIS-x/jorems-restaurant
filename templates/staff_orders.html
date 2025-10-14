@@ -79,6 +79,12 @@
         color: #155724;
         }
 
+        .status-served {
+        background-color: #E2E3E5;
+        font-weight: bold;
+        color: #383D41;
+        }
+
         .status-completed {
         background-color: #D1E7FF;
         font-weight: bold;
@@ -136,8 +142,9 @@
                                         {% set status_options = [
                                             ('pending', 'Pending'),
                                             ('preparing', 'Preparing'),
-                                            ('ready', 'Ready'),
-                                            ('completed', 'Completed'),
+                                            ('ready', 'Ready to Serve'),
+                                            ('served', 'Served'),
+                                            ('completed', 'Done & Table Clear'),
                                             ('cancelled', 'Cancelled')
                                         ] %}
                                         {% for value, label in status_options %}
