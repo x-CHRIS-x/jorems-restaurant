@@ -25,3 +25,6 @@ ENV/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Generated QR codes
+static/qr/
