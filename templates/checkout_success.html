@@ -4,21 +4,20 @@
 
 {% block additional_styles %}
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            background: #f8f8f8; 
-            text-align: center; 
-            margin: 0; 
-            padding: 20px; 
+        .content-wrapper {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
         }
-        .container { 
+        
+        .success-container { 
             background: #fff; 
             padding: 30px; 
-            border-radius: 8px; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-            display: inline-block; 
-            max-width: 600px; 
-            width: 100%; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            margin: 20px auto;
+            max-width: 800px;
         }
         h1 { color: #27ae60; }
         table { 
@@ -84,7 +83,8 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
+<div class="content-wrapper">
+    <div class="success-container">
         <h1>Thank You For Your Order, {{ session.username }}!</h1>
         <p>Your order has been placed successfully.</p>
 
