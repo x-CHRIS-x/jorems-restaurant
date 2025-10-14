@@ -1,7 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Checkout Successful</title>
+{% extends "navbar.html" %}
+
+{% block title %}Checkout Successful{% endblock %}
+
+{% block additional_styles %}
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -80,8 +81,9 @@
             color: #145a32;
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="container">
         <h1>Thank You For Your Order, {{ session.username }}!</h1>
         <p>Your order has been placed successfully.</p>
@@ -126,5 +128,4 @@
                 <a href="{{ url_for('index') }}" class="btn-back" style="padding: 12px 25px; margin: 10px; background: #dc3545; color: white; text-decoration: none; border-radius: 8px; display: inline-block;">⬅ Back to Menu</a>
             {% endif %}
     </div>
-</body>
-</html>
+{% endblock %}

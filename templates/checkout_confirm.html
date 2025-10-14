@@ -1,7 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Confirm Your Order - Jorem's Restaurant</title>
+{% extends "navbar.html" %}
+
+{% block title %}Confirm Your Order - Jorem's Restaurant{% endblock %}
+
+{% block additional_styles %}
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -139,20 +140,9 @@
             margin-right: 20px;
         }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <a class="brand" href="/"> Jorem's Restaurant</a>
-        <div class="navbar-right">
-            <a href="{{ url_for('cart') }}">Cart</a>
-            {% if session.logged_in %}
-                <a href="{{ url_for('logout') }}">Logout </a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-            {% endif %}
-        </div>
-    </div>
+{% endblock %}
 
+{% block content %}
     <h1>Confirm Your Order</h1>
     
     <div class="confirmation-message">
@@ -197,5 +187,4 @@
             {% endif %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}
