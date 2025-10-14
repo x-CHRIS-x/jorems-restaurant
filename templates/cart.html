@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Your Cart - Jorem's Restaurant{% endblock %}
+
+{% block head_style %}
+    <style>
+        .cart-container { max-width: 900px; margin: auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; }
+        h1 { text-align: center; }
+        .cart-items { border-top: 1px solid #eee; margin-top: 20px; }
+        .cart-item { display: flex; gap: 15px; align-items: center; padding: 15px 0; border-bottom: 1px solid #f1f1f1; }
+        .cart-item img { width: 100px; height: 70px; object-fit: cover; border-radius: 6px; }
+        .cart-item-info { flex: 1; text-align: left; }
+        .cart-item-name { font-weight: bold; font-size: 18px; }
+        .cart-item-price { color: #666; font-size: 14px; }
+        .cart-item-request { font-size: 13px; color: #555; font-style: italic; }
+        .cart-qty-controls { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
+        .cart-qty-controls form { margin: 0; }
+        .quantity-btn { width: 32px; height: 32px; line-height: 32px; box-sizing: border-box; border: 1px solid #bdbdbd; border-radius: 6px; background-color: #e0e0e0; color: #333; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
+        .quantity-btn:hover { background-color: #cfcfcf; }
+        .quantity-display { min-width: 44px; height: 32px; line-height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-align: center; font-weight: 700; padding: 0 8px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fff; color: #333; vertical-align: middle; }
+        .trash-btn { background: transparent; border: none; cursor: pointer; }
+        .trash-btn img { width: 18px; height: 18px; }
+        .cart-item-subtotal { font-weight: bold; font-size: 18px; }
+        .cart-footer { margin-top: 20px; padding: 20px; border-top: 2px solid #eee; text-align: right; }
+        .totals-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 16px; }
+        .totals-row.total { font-weight: bold; font-size: 20px; }
+        .cart-actions { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .order-btn { display: inline-block; padding: 0.9em 2em; font-size: 14px; text-transform: uppercase; letter-spacing: 2.5px; font-weight: 500; color: #000; background-color: #fff; border: none; border-radius: 45px; box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; cursor: pointer; text-align: center; text-decoration: none; }
+        .order-btn:hover { background-color: #27ae60; box-shadow: 0px 15px 20px rgba(39, 174, 96, 0.4); color: #fff; transform: translateY(-7px); }
+        .order-btn:active { transform: translateY(-1px); }
+        .clear-cart-btn { background-color: #e74c3c; color: white; }
+        .clear-cart-btn:hover { background-color: #c0392b; box-shadow: 0px 15px 20px rgba(192, 57, 43, 0.4); }
+        .empty-cart { text-align: center; padding: 40px; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="cart-container">
+        <h1>Your Shopping Cart</h1>
+
+        {% if cart and cart|length > 0 %}
+            <div class="cart-items">
+                {% for item in cart %}
+                <div class="cart-item">
+                    <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">{{ item.name }}</div>
+                        <div class="cart-item-price">₱ {{ '%.2f'|format(item.price) }}</div>
+                        {% if item.request %}<div class="cart-item-request"><em>Note: {{ item.request }}</em></div>{% endif %}
+                        <div class="cart-qty-controls">
+                            <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="item_id" value="{{ item.id }}">
+                                <input type="hidden" name="change" value="-1">
+                                <button type="submit" class="quantity-btn">-</button>
+                            </form>
+                            <span class="quantity-display">{{ item.qty }}</span>
+                            <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="item_id" value="{{ item.id }}">
+                                <input type="hidden" name="change" value="1">
+                                <button type="submit" class="quantity-btn">+</button>
+                            </form>
+                            <form action="{{ url_for('remove_item') }}" method="post" style="display:inline; margin-left:8px;">
+                                <input type="hidden" name="item_name" value="{{ item.name }}">
+                                <button type="submit" class="trash-btn" title="Remove">
+                                    <img src="{{ url_for('static', filename='images/trash.png') }}" alt="Remove">
+                                 </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="cart-item-subtotal"><strong>₱ {{ '%.2f'|format(item.subtotal) }}</strong></div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="cart-footer">
+                <div class="totals-row">
+                    <span>Subtotal</span>
+                    <span>₱ {{ '%.2f'|format(subtotal) }}</span>
+                </div>
+                <div class="totals-row">
+                    <span>Taxes (12%)</span>
+                    <span>₱ {{ '%.2f'|format(taxes) }}</span>
+                </div>
+                <div class="totals-row total">
+                    <span>Total</span>
+                    <span>₱ {{ '%.2f'|format(total) }}</span>
+                </div>
+                <div class="cart-actions">
+                    <form action="{{ url_for('clear_cart') }}" method="post">
+                        <button type="submit" class="order-btn clear-cart-btn">Clear Cart</button>
+                    </form>
+                    {% if session.logged_in %}
+                    <form action="{{ url_for('checkout_confirm') }}" method="post">
+                        <button type="submit" class="order-btn">Proceed to Checkout</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="order-btn">Login to Checkout</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-cart">
+                <p>Your cart is empty.</p>
+                <a href="{{ url_for('index') }}" class="order-btn">Continue Shopping</a>
+            </div>
+        {% endif %}
+    </div>
+

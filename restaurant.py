@@ -1,8 +1,8 @@
-from flask import Flask, render_template, request, session, redirect, url_for, flash
+from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
 from crud import *
 from crud_tables import *
 from werkzeug.security import check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from werkzeug.utils import secure_filename
 import os
@@ -10,11 +10,21 @@ from flask import send_file
 import io
 import json
 import qrcode
+import random
+import calendar
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import inch
 
 app = Flask(__name__)
 app.secret_key = "legaspixyz"
+
+# Add custom Jinja2 filter for json loading
+@app.template_filter('loads_json')
+def loads_json(data):
+    try:
+        return json.loads(data)
+    except (json.JSONDecodeError, TypeError):
+        return []
 
 # Initialize database tables
 init_tables()
@@ -245,7 +255,11 @@ def add_single_item():
         elif return_to == "staff_menu":
             return redirect(url_for("staff_menu"))
         return redirect(url_for("staff_menu"))  # Default staff redirect
-    return redirect(url_for("budget_mode"))  # Default customer redirect
+    
+    # For regular customers, check if budget mode is active
+    if session.get("budget_value"):
+        return redirect(url_for("budget_mode"))
+    return redirect(url_for("index"))  # Default customer redirect if not in budget mode
 
 @app.route("/add_multiple_items", methods=["POST"])
 def add_multiple_items():
@@ -439,13 +453,12 @@ def budget_mode():
     
     for item in menu:
         if item["price"] <= budget:
-            # Convert Row to dictionary and add current quantity
+            # Convert Row to dictionary and always set a default quantity
             item_dict = dict(item)
-            item_dict["quantity"] = 0
-            for cart_item in cart:
-                if cart_item["name"] == item_dict["name"]:
-                    item_dict["quantity"] = cart_item["qty"]
-                    break
+            # Find matching cart item
+            cart_item = next((c for c in cart if c["name"] == item["name"]), None)
+            # Set quantity from cart or default to 0
+            item_dict["quantity"] = cart_item["qty"] if cart_item else 0
             suggested.append(item_dict)
     
     order_number = get_next_order_number()
@@ -491,7 +504,7 @@ def budget_order():
             cart.append(item)
     session["cart"] = cart
     session.modified = True
-    return redirect(url_for("cart"))
+    return redirect(url_for("index"))
 
 @app.route("/order_confirm", methods=["POST"])
 def order_confirm():
@@ -568,14 +581,18 @@ def logout():
 
 @app.route("/cart")
 def cart():
-    return render_template("cart.html", cart=session.get("cart", []))
+    cart_items = session.get("cart", [])
+    subtotal, taxes, total = _cart_summary(cart_items)
+    order_number = get_next_order_number()
+    return render_template("cart.html", cart=cart_items, subtotal=subtotal, taxes=taxes, total=total, order_number=order_number)
 
 @app.route("/checkout_confirm", methods=["POST"])
 @login_required
 def checkout_confirm():
     cart_items = session.get("cart", [])
     if not cart_items:
-        return redirect(url_for("cart"))
+        flash("Please add at least one item.", "warning")
+        return redirect(url_for("index"))
     # If budget mode is active, enforce budget before confirming
     try:
         budget_value = float(session.get("budget_value", 0))
@@ -753,6 +770,111 @@ def my_orders():
 
 
 # --- STAFF ROUTES ---
+@app.route("/panel/chart-data")
+@staff_required
+def get_chart_data():
+    time_range = request.args.get('range', 'daily')
+    date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+    selected_date = datetime.strptime(date_str, '%Y-%m-%d')
+    
+    if time_range == 'daily':
+        # For daily view, show hourly data
+        labels = [f"{i:02d}:00" for i in range(24)]
+        values = [0] * 24  # Initialize with zeros
+        
+        # Get orders from database for the selected date
+        daily_orders = get_orders_by_date(selected_date)
+        
+        # Aggregate by hour
+        for order in daily_orders:
+            if isinstance(order['created_at'], str):
+                order_time = datetime.strptime(order['created_at'], '%Y-%m-%d %H:%M:%S')
+            else:
+                order_time = order['created_at']
+            values[order_time.hour] += float(order['total'])
+            
+    else:
+        # For monthly view, show daily data
+        _, days_in_month = calendar.monthrange(selected_date.year, selected_date.month)
+        labels = [str(i) for i in range(1, days_in_month + 1)]
+        values = [0] * days_in_month
+        
+        # Get orders from database for the selected month
+        monthly_orders = get_orders_by_month(selected_date)
+        
+        # Aggregate by day
+        for order in monthly_orders:
+            if isinstance(order['created_at'], str):
+                order_time = datetime.strptime(order['created_at'], '%Y-%m-%d %H:%M:%S')
+            else:
+                order_time = order['created_at']
+            values[order_time.day - 1] += float(order['total'])
+    
+    return jsonify({'labels': labels, 'values': values})
+
+@app.route("/panel/dashboard")
+@staff_required
+def panel_dashboard():
+    today = datetime.now()
+    today_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Get orders for today from database
+    todays_orders = get_orders_by_date(today)
+    
+    # Daily stats
+    daily_sales = sum(float(order['total']) for order in todays_orders)
+    daily_orders = len(todays_orders)
+    
+    # Get monthly orders from database
+    monthly_orders = get_orders_by_month(today)
+    monthly_sales = sum(float(order['total']) for order in monthly_orders)
+    
+    # Calculate average order value
+    all_orders = get_all_orders()
+    if all_orders:
+        avg_order_value = sum(float(order['total']) for order in all_orders) / len(all_orders)
+    else:
+        avg_order_value = 0
+    
+    # Get hourly data for today's chart
+    chart_labels = [f"{i:02d}:00" for i in range(24)]
+    chart_data = [0] * 24
+    for order in todays_orders:
+        if isinstance(order['created_at'], str):
+            order_time = datetime.strptime(order['created_at'], '%Y-%m-%d %H:%M:%S')
+        else:
+            order_time = order['created_at']
+        chart_data[order_time.hour] += float(order['total'])
+    
+    # Get recent orders (last 10) and format their dates
+    recent_orders = []
+    for order in get_orders(limit=10):
+        order_dict = dict(order)
+        if isinstance(order_dict['created_at'], str):
+            created_at = datetime.strptime(order_dict['created_at'], '%Y-%m-%d %H:%M:%S')
+            order_dict['created_at'] = created_at
+        recent_orders.append(order_dict)
+                         
+    return render_template('panel_dashboard.html',
+                         today=today.strftime('%Y-%m-%d'),
+                         daily_sales=daily_sales,
+                         daily_orders=daily_orders,
+                         monthly_sales=monthly_sales,
+                         avg_order_value=avg_order_value,
+                         chart_labels=chart_labels,
+                         chart_data=chart_data,
+                         recent_orders=recent_orders)
+    
+    return render_template('panel_dashboard.html',
+                         today=today.strftime('%Y-%m-%d'),
+                         daily_sales=daily_sales,
+                         daily_orders=daily_orders,
+                         monthly_sales=monthly_sales,
+                         avg_order_value=avg_order_value,
+                         chart_labels=chart_labels,
+                         chart_data=chart_data,
+                         recent_orders=recent_orders)
+
 @app.route("/staff/tables")
 @staff_required
 def tables():

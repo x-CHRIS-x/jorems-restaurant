@@ -62,6 +62,7 @@
         {% if session.logged_in %}
             {% if session.is_staff %}
                 <!-- Staff Navbar -->
+                <a href="{{ url_for('panel_dashboard') }}">Dashboard</a>
                 <a href="{{ url_for('staff_dashboard') }}">Menu Management</a>
                 <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
                 <a href="{{ url_for('table_list') }}">Tables</a>

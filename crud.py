@@ -154,3 +154,114 @@ def get_next_order_number():
     row = cursor.fetchone()
     conn.close()
     return row[0] if row else 1
+
+def get_all_orders():
+    """Get all orders from the database"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM (
+            SELECT * FROM orders
+            UNION ALL
+            SELECT * FROM dummy_orders
+        )
+        ORDER BY created_at DESC
+    """)
+    orders = cursor.fetchall()
+    conn.close()
+    return orders
+
+def get_orders_by_date(date):
+    """Get orders for a specific date"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    date_str = date.strftime('%Y-%m-%d')
+    cursor.execute("""
+        SELECT * FROM (
+            SELECT * FROM orders
+            UNION ALL
+            SELECT * FROM dummy_orders
+        )
+        WHERE DATE(created_at) = DATE(?)
+        ORDER BY created_at DESC
+    """, (date_str,))
+    orders = cursor.fetchall()
+    conn.close()
+    return orders
+
+def get_orders_by_month(date):
+    """Get orders for a specific month"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    year_month = date.strftime('%Y-%m')
+    cursor.execute("""
+        SELECT * FROM (
+            SELECT * FROM orders
+            UNION ALL
+            SELECT * FROM dummy_orders
+        )
+        WHERE strftime('%Y-%m', created_at) = ?
+        ORDER BY created_at DESC
+    """, (year_month,))
+    orders = cursor.fetchall()
+    conn.close()
+    return orders
+
+def get_daily_orders_stats(date):
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Get orders for specific date grouped by hour
+    cursor.execute("""
+        SELECT 
+            strftime('%H', created_at) as hour,
+            COUNT(*) as order_count,
+            SUM(total) as total_sales
+        FROM (
+            SELECT * FROM orders
+            UNION ALL
+            SELECT * FROM dummy_orders
+        )
+        WHERE date(created_at) = date(?)
+        GROUP BY strftime('%H', created_at)
+        ORDER BY hour
+    """, (date,))
+    hourly_stats = cursor.fetchall()
+    conn.close()
+    return hourly_stats
+
+def get_monthly_orders_stats(year, month):
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Get orders for specific month grouped by day
+    cursor.execute("""
+        SELECT 
+            strftime('%d', created_at) as day,
+            COUNT(*) as order_count,
+            SUM(total) as total_sales
+        FROM (
+            SELECT * FROM orders
+            UNION ALL
+            SELECT * FROM dummy_orders
+        )
+        WHERE strftime('%Y', created_at) = ? AND strftime('%m', created_at) = ?
+        GROUP BY strftime('%d', created_at)
+        ORDER BY day
+    """, (str(year), f"{month:02d}"))
+    daily_stats = cursor.fetchall()
+    conn.close()
+    return daily_stats
+
+def get_orders_summary(start_date, end_date):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as order_count,
+            SUM(total) as total_sales,
+            AVG(total) as avg_order_value
+        FROM orders
+        WHERE date(created_at) BETWEEN date(?) AND date(?)
+    """, (start_date, end_date))
+    summary = cursor.fetchone()
+    conn.close()
+    return summary

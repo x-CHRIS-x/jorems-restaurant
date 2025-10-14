@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Confirm Your Order - Jorem's Restaurant</title>
+{% extends "navbar.html" %}
+
+{% block title %}Confirm Your Order - Jorem's Restaurant{% endblock %}
+
+{% block additional_styles %}
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: #f8f8f8;
             text-align: center;
-            margin: 0;
             padding: 20px;
         }
         
@@ -100,58 +98,10 @@
             color: #d68910;
         }
         
-        .navbar {
-            background-color: #f39c12;
-            overflow: hidden;
-            position: sticky;
-            top: 0;
-            width: 100%;
-            z-index: 1000;
-            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
-            border-radius: 10px;
-        }
-
-        .navbar a {
-            float: left;
-            display: block;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            padding: 14px 20px;
-            text-decoration: none;
-            transition: 0.3s;
-        }
-
-        .navbar a:hover {
-            background-color: #e67e22;
-            color: #fff;
-        }
-
-        .navbar .brand {
-            float: left;
-            margin-top: 3px;
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .navbar-right {
-            float: right;
-            margin-right: 20px;
-        }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <a class="brand" href="/"> Jorem's Restaurant</a>
-        <div class="navbar-right">
-            <a href="{{ url_for('cart') }}">Cart</a>
-            {% if session.logged_in %}
-                <a href="{{ url_for('logout') }}">Logout </a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-            {% endif %}
-        </div>
-    </div>
+{% endblock %}
+
+{% block content %}
 
     <h1>Confirm Your Order</h1>
     
@@ -162,7 +112,6 @@
     <div class="order-summary">
         <h3>Order Summary</h3>
         <div class="order-grid">
-            {% set ns = namespace(total=0) %}
             {% for item in cart %}
             <div class="order-card">
                 <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
@@ -172,12 +121,13 @@
                     <div class="order-sub">₱ {{ "%.2f"|format(item.subtotal) }}</div>
                 </div>
             </div>
-            {% set ns.total = ns.total + item.subtotal %}
             {% endfor %}
         </div>
         
         <div class="total-section">
-            <h3>Total Amount: PHP {{ "%.2f"|format(ns.total) }}</h3>
+            <div>Subtotal: ₱ {{ "%.2f"|format(subtotal) }}</div>
+            <div>Taxes (12%): ₱ {{ "%.2f"|format(taxes) }}</div>
+            <h3>Total Amount: ₱ {{ "%.2f"|format(total) }}</h3>
         </div>
         
         <div style="margin-top: 30px;">
@@ -192,5 +142,4 @@
             {% endif %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}
