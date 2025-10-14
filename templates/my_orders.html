@@ -1,7 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Orders - Jorem's Restaurant</title>
+{% extends "navbar.html" %}
+
+{% block title %}My Orders - Jorem's Restaurant{% endblock %}
+
+{% block additional_styles %}
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -81,16 +82,9 @@
             font-size: 0.9em;
         }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <a class="brand" href="/">Jorem's Restaurant</a>
-        <div class="navbar-right">
-            <a href="{{ url_for('index') }}">Menu</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </div>
-    </div>
+{% endblock %}
 
+{% block content %}
     <div class="container">
         <div class="card">
             <div class="card-header">
@@ -130,5 +124,4 @@
             </div>
         </div>
     </div>
-</body>
-</html>
+{% endblock %}
