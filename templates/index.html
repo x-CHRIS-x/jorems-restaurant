@@ -1,22 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Jorem's Restaurant Menu</title>
+{% extends "navbar.html" %}
+
+{% block title %}Jorem's Restaurant Menu{% endblock %}
+
+{% block additional_styles %}
     <style>
         .modal-body .modal-img {
             max-height: 300px;
             object-fit: cover;
             width: 100%;
             border-radius: .5rem;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f8f8f8;
-            margin: 0;
-            padding: 0;
-            padding-bottom: 50px;
         }
 
         h1, h3 {
@@ -57,32 +49,6 @@
         button:hover { background-color: #d68910; }
 
         form { margin-bottom: 20px; }
-
-        a { text-decoration: none; color: #f39c12; font-weight: bold; }
-        a:hover { color: #d68910; }
-
-        .navbar {
-            background-color: #f39c12;
-            overflow: hidden;
-            position: sticky;
-            top: 0;
-            width: 100%;
-            z-index: 1000;
-            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
-            border-radius: 10px;
-        }
-        .navbar a {
-            float: left;
-            display: block;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            padding: 14px 20px;
-            text-decoration: none;
-        }
-        .navbar a:hover { background-color: #e67e22; }
-        .navbar .brand { float: left; margin-top: 3px; font-size: 20px; font-weight: bold; }
-        .navbar-right { float: right; margin-right: 20px; }
 
         .action-container {
             display: flex;
@@ -167,7 +133,7 @@
         /* Layout */
         .page-container { display: flex; gap: 20px; align-items: flex-start; padding: 0 20px; }
         .menu-section { flex: 1 1 70%; }
-        .cart-sidebar { flex: 0 0 20%; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 70px; height: calc(100vh - 90px); display: flex; flex-direction: column; }
+        .cart-sidebar { flex: 0 0 22%; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 70px; height: calc(100vh - 90px); display: flex; flex-direction: column; }
         .cart-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .cart-items { overflow-y: auto; padding: 10px 15px; }
         .cart-item { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f1f1; }
@@ -226,31 +192,11 @@
             transform: translateY(-2px);
         }
     </style>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="navbar">
-        <a class="brand" href="/">Jorem's Restaurant</a>
-        <div class="navbar-right">
-            {% if session.logged_in %}
-                {% if session.is_staff %}
-                    <a href="{{ url_for('staff_dashboard') }}">Staff Panel</a>
-                    <a href="{{ url_for('staff_menu') }}">Staff Menu</a>
-                {% else %}
-                    <a href="{{ url_for('my_orders') }}">My Orders</a>
-                {% endif %}
-                <a href="{{ url_for('logout') }}">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-            {% endif %}
-        </div>
-    </div>
+{% endblock %}
 
+{% block content %}
     <div class="page-container">
         <div class="menu-section">
-            <h1>Welcome to Jorem's Restaurant</h1>
-            <h3>Menu</h3>
-
             <form action="{{ url_for('add_multiple_items') }}" method="post" id="menu-form">
                 <div class="menu-grid">
                     {% for item in menu %}
@@ -335,7 +281,12 @@
                     <div class="cart-item">
                         <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
                         <div class="cart-item-info">
-                            <div class="cart-item-name">{{ item.name }}</div>
+                            <div class="cart-item-name">
+                                {{ item.name }}
+                                {% if item.request %}
+                                    <small class="text-muted d-block" style="font-size: 0.85em;">(Special Request: {{ item.request }})</small>
+                                {% endif %}
+                            </div>
                             <div class="cart-item-price">₱ {{ '%.2f'|format(item.price) }}</div>
                             <div class="cart-qty-controls">
                                 <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
@@ -343,7 +294,10 @@
                                     <input type="hidden" name="change" value="-1">
                                     <button type="submit" class="quantity-btn">-</button>
                                 </form>
-                                <span class="quantity-display">{{ item.qty }}</span>
+                                <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    <input type="number" name="new_quantity" value="{{ item.qty }}" min="0" class="quantity-display" style="width: 60px; text-align: center;" onchange="this.form.submit()">
+                                </form>
                                 <form action="{{ url_for('update_cart') }}" method="post" style="display:inline;">
                                     <input type="hidden" name="item_id" value="{{ item.id }}">
                                     <input type="hidden" name="change" value="1">
@@ -383,9 +337,11 @@
         </aside>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
             const menuForm = document.getElementById('menu-form');
             const totalPriceEl = document.getElementById('total-price');
 
@@ -457,7 +413,5 @@
                     }
                 }
             });
-        });
     </script>
-</body>
-</html>
+{% endblock %}

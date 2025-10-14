@@ -277,10 +277,11 @@ def add_multiple_items():
 @app.route("/update_cart", methods=["POST"])
 def update_cart():
     item_id = request.form.get("item_id")
-    change = int(request.form.get("change", 0))
+    change = request.form.get("change", "0")
+    new_quantity = request.form.get("new_quantity")
     return_to = request.form.get("return_to")
     
-    if not item_id or change == 0:
+    if not item_id:
         return redirect(url_for("index"))
     
     # Get the menu item details
@@ -306,7 +307,20 @@ def update_cart():
         # we assume it doesn't have a special request.
         cart_item_key = f"{cart_item.get('id')}_{cart_item.get('request', '')}"
         if cart_item_key == f"{item['id']}_":
-            new_qty = cart_item["qty"] + change
+            if new_quantity is not None:
+                # Direct quantity update
+                try:
+                    new_qty = int(new_quantity)
+                except ValueError:
+                    new_qty = 0
+            else:
+                # Increment/decrement update
+                try:
+                    change = int(change)
+                    new_qty = cart_item["qty"] + change
+                except ValueError:
+                    new_qty = cart_item["qty"]
+            
             if new_qty <= 0:
                 # Remove item from cart if quantity becomes 0 or negative
                 cart.remove(cart_item)
